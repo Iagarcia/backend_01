@@ -2,7 +2,7 @@
 
 This backend provides an API for manipulating a database that represents the process of delivering goods and services. Made in NestJS.
 
-![database](database.svg)
+![database](documentation/database.svg)
 
 ## Features
 
