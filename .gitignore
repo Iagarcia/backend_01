@@ -1,7 +1,9 @@
-# Directories
+# Directories and Files
 /dist
 /node_modules
 /uploads
+
+package-lock.json
 
 # Logs
 logs
