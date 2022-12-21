@@ -1,41 +1,43 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as basicAuth from 'express-basic-auth';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get<ConfigService>(ConfigService);
   app.enableCors();
   app.useGlobalPipes(new ValidationPipe());
   app.use(
-      ['/api'],
+      [configService.get('doc.path')],
       basicAuth({
           challenge: true,
-          users: { 'admin': 'v1d4t!' }
+          users: { admin: configService.get('doc.password') }
       }),
   );
 
   const options = new DocumentBuilder()
-      .setTitle('Vidat API')
-      .setDescription('Official Vidat API Documentation')
-      .setVersion('1.0')
+      .setTitle(configService.get('doc.title'))
+      .setDescription(configService.get('doc.description'))
+      .setVersion(configService.get('doc.version'))
       .addBearerAuth(
           {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT',
-            name: 'JWT',
-            description: 'Enter JWT token',
-            in: 'header',
+            type: configService.get('bearer.type'),
+            scheme: configService.get('bearer.schema'),
+            bearerFormat: configService.get('bearer.format'),
+            name: configService.get('bearer.name'),
+            description: configService.get('bearer.description'),
+            in: configService.get('bearer.in'),
           },
-          'JWT-auth', // This name here is important for matching up with @ApiBearerAuth() in your controller!
+          configService.get('bearer.reference'),
       )
       .build();
   const document = SwaggerModule.createDocument(app, options);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup(configService.get('doc.path'), app, document);
 
-  await app.listen(process.env.PORT || 3000);
+  await app.listen(configService.get('http.port'));
 }
 
 bootstrap();

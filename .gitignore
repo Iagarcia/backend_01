@@ -4,6 +4,7 @@
 /uploads
 
 package-lock.json
+config.yaml
 
 # Logs
 logs
