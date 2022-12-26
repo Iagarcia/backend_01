@@ -1,0 +1,28 @@
+http:
+    port: 3000
+db:
+    host: 'localhost'
+    port: 5432
+    username: 
+    password: 
+    database: 
+
+doc:
+    path: '/api'
+    password: 'backend_01'
+    title: 'backend_01 API'
+    description: 'Official backend_01: Goods and Services API Documentation'
+    version: '1.0'
+    bearer:
+        type: 'http'
+        scheme: 'bearer'
+        format: 'JWT'
+        name: 'JWT'
+        description: 'Enter Jason Web Token'
+        in: 'header'
+        reference: 'JWT-auth'
+
+jwt:
+    key: 'Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP'
+    alg: 'HS256'
+    exp: '2h'

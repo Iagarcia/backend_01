@@ -11,7 +11,7 @@ export class Provider extends Model {
     @AllowNull(false)
     @Unique
     @Column
-    rut: string;
+    tin: string;
 
     @Column
     nationality: string;
@@ -28,7 +28,7 @@ export class Provider extends Model {
     @AllowNull(false)
     @Unique
     @Column
-    phone: string;
+    phone: number;
 
     @Column
     address: string;

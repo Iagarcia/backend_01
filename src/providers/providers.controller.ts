@@ -1,13 +1,11 @@
 import { Controller, Post, Get, Put } from '@nestjs/common';
 import { UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { Body, Headers, Param, Res  } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiConsumes,  } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiConsumes, ApiResponse } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { join } from 'path';
 
 import { CreateProviderDto } from './dto/create-provider.dto';
 import { AuthenticateProviderDto } from "./dto/authenticate-provider.dto";
-import { ReauthenticateProviderDto } from "./dto/reauthenticate-provider.dto";
 import { RecoverProviderDto } from "./dto/recover-provider.dto";
 import { UpdateProviderPersonalDataDto } from "./dto/update-provider-personal-data.dto";
 import { UpdateProviderContactDataDto} from "./dto/update-provider-contact-data.dto";
@@ -15,50 +13,56 @@ import { UpdatePropertiesDataDto } from "./dto/update-properties-data.dto";
 import { UpdateProviderPhotoDto } from "./dto/update-provider-photo.dto";
 
 import { ProvidersService } from './providers.service';
-import { AuthGuard, AgainGuard, ClientGuard } from "./providers.guard";
-import {of} from "rxjs";
+import { AuthGuard } from "./providers.guard";
+import { ReasonPhrases, StatusCodes }from 'http-status-codes';
 
 @Controller('/providers')
 export class ProvidersController {
     constructor(private readonly providersService: ProvidersService) {}
 
-    @Post()
+    @Post('/create')
     @ApiTags('Providers Endpoints')
+    @ApiResponse({ status: StatusCodes.CREATED, description: ReasonPhrases.CREATED})
+    @ApiResponse({ status: StatusCodes.BAD_REQUEST, description: ReasonPhrases.BAD_REQUEST})
+    @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     create(@Body() createProviderDto: CreateProviderDto){
         return this.providersService.create(createProviderDto);
     }
 
     @Post('/authenticate')
     @ApiTags('Providers Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.UNAUTHORIZED, description: ReasonPhrases.UNAUTHORIZED})
+    @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     authenticate(@Body() authenticateProviderDto: AuthenticateProviderDto) {
         return this.providersService.authenticate(authenticateProviderDto);
     }
 
-    @Post('/reauthenticate')
+    @Put('/recover')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.BAD_REQUEST, description: ReasonPhrases.BAD_REQUEST})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     @ApiTags('Providers Endpoints')
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(AgainGuard)
-    reauthenticate(@Body() reauthenticateProviderDto: ReauthenticateProviderDto, @Headers() headers) {
-        return this.providersService.reauthenticate(reauthenticateProviderDto, headers);
+    recover(@Body() recoverDto: RecoverProviderDto) {
+        return this.providersService.recover(recoverDto);
     }
 
     @Get('/requestData')
     @ApiTags('Providers Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     @ApiBearerAuth('JWT-auth')
     @UseGuards(AuthGuard)
     requestData(@Headers() headers){
         return this.providersService.requestData(headers);
     }
 
-    @Put('/recover')
-    @ApiTags('Providers Endpoints')
-    @ApiBearerAuth('JWT-auth')
-    recover(@Body() recoverDto: RecoverProviderDto) {
-        return this.providersService.recover(recoverDto);
-    }
-
     @Put('/updatePersonalData')
     @ApiTags('Providers Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     @ApiBearerAuth('JWT-auth')
     @UseGuards(AuthGuard)
     updatePersonalData(@Headers() headers, @Body() personalDataDto: UpdateProviderPersonalDataDto) {
@@ -67,6 +71,8 @@ export class ProvidersController {
 
     @Put('/updateContactData')
     @ApiTags('Providers Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     @ApiBearerAuth('JWT-auth')
     @UseGuards(AuthGuard)
     updateContactData(@Headers() headers, @Body() contactDataDto: UpdateProviderContactDataDto) {
@@ -75,6 +81,8 @@ export class ProvidersController {
 
     @Put('/updatePropertiesData')
     @ApiTags('Providers Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     @ApiBearerAuth('JWT-auth')
     @UseGuards(AuthGuard)
     updatePropertiesData(@Headers() headers, @Body() updatePropertiesDataDto: UpdatePropertiesDataDto) {
@@ -84,43 +92,24 @@ export class ProvidersController {
     @Put('/updatePhoto')
     @ApiConsumes('multipart/form-data')
     @ApiTags('Providers Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.BAD_REQUEST, description: ReasonPhrases.BAD_REQUEST})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     @ApiBearerAuth('JWT-auth')
     @UseGuards(AuthGuard)
     @UseInterceptors(FileInterceptor('file'))
     updatePhoto(
-        @Body() photoDto:UpdateProviderPhotoDto,
+        @Body() _photoDto:UpdateProviderPhotoDto,
         @Headers() headers,
         @UploadedFile() file: Express.Multer.File) {
-	console.log("BODY:", photoDto);
-	console.log("FILE:", file);
-        if(file.mimetype.split('/')[0]==='image'){
-            if(file.size < 10000000){
-                return this.providersService.updatePhoto(headers, file);
-            }
-            else {
-                return ({
-                    error: "El archivo excede tamaño máximo permitido"
-                })
-            }
-        }
-        else {
-            return ({
-                error: "El archivo no es una foto"
-            })
-        }
+            return this.providersService.updatePhoto(headers, file);
     }
 
     @Get('/getPhoto/:filename')
     @ApiTags('Providers Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.NOT_FOUND, description: ReasonPhrases.NOT_FOUND})
     getPhoto(@Param('filename') filename: string, @Res() res){
-        return of (res.sendFile(join(process.cwd(), './uploads/'+filename)));
-    }
-
-    @Get('/getProvider/:id')
-    @ApiTags('Providers Endpoints')
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(ClientGuard)
-    getProvider(@Param('id') id: number){
-        return this.providersService.getProvider(id)
+        return this.providersService.getPhoto(res, filename);
     }
 }

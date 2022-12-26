@@ -1,20 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateProviderDto {
-    @ApiProperty({ example: 'Miguel Carrera', description: 'The name of the user' })
+    @ApiProperty({ example: 'José Miguel Carrera Verdugo', description: 'Full name', required: true })
     name: string;
-    @ApiProperty({ example: '18654321-4', description: 'The rut of the user' })
-    rut: string;
-    @ApiProperty({ example: 'mc@libertador.cl', description: 'The email of the user' })
-    email: string;
-    @ApiProperty({ example: '987543265', description: 'The phone of the user' })
-    phone: string;
-    @ApiProperty({ example: 'CL', description: 'The nation code of the user' })
+    @ApiProperty({ example: '17851821', description: 'Taxpayer Identification Number', required: true})
+    tin: string;
+    @ApiProperty({ example: 'CHL', description: 'Country of nationality', required: false })
     nationality: string;
-    @ApiProperty({ example: 'Santiago 1785', description: 'The address of the user' })
-    address: string;
-    @ApiProperty({ example: '1785/09/15', description: 'The birthday of the user' })
+    @ApiProperty({ example: '1785/10/15', description: 'Anniversary of the birth', required: false  })
     birthday: string;
-    @ApiProperty({ example: 'mys3cr3tp4ssw0rd', description: 'The password of the user' })
+    @ApiProperty({ example: 'jc@mail.cl', description: 'Electronic mail', required: true })
+    email: string;
+    @ApiProperty({ example: '88752111', description: 'Telephone number', required: true })
+    phone: string;
+    @ApiProperty({ example: 'Independencia 1810', description: 'Reachable location', required: false  })
+    address: string;
+    @ApiProperty({ example: 'libertad', description: 'Code used to confirm identity', required: true  })
     password: string;
 }

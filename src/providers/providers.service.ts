@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { ConfigService } from '@nestjs/config';
 
 import { CreateProviderDto } from './dto/create-provider.dto';
 import { AuthenticateProviderDto } from "./dto/authenticate-provider.dto";
-import { ReauthenticateProviderDto } from "./dto/reauthenticate-provider.dto";
 import { RecoverProviderDto } from "./dto/recover-provider.dto";
 import { UpdateProviderPersonalDataDto } from "./dto/update-provider-personal-data.dto";
 import { UpdateProviderContactDataDto } from "./dto/update-provider-contact-data.dto";
@@ -12,11 +12,14 @@ import { UpdatePropertiesDataDto } from "./dto/update-properties-data.dto";
 import { Provider } from './models/provider.model';
 import * as bcrypt from 'bcrypt';
 import * as jose from 'jose';
-import { ReasonPhrases, StatusCodes }from 'http-status-codes';
+import { join } from 'path';
+import { of } from "rxjs";
+import { getReasonPhrase, ReasonPhrases, StatusCodes }from 'http-status-codes';
 
 @Injectable()
 export class ProvidersService {
     constructor(
+        private configService: ConfigService,
         @InjectModel(Provider)
         private readonly providerModel: typeof Provider,
     ) {}
@@ -26,16 +29,10 @@ export class ProvidersService {
             const salt = await bcrypt.genSalt();
             const password = createProviderDto.password;
             const hash = await bcrypt.hash(password, salt);
-            const properties = {
-                description: '',
-                education : [],
-                work: [],
-                agreement: [],
-                photo: '',
-            }
-            const provider = await this.providerModel.create({
-                name: createProviderDto.name,
-                rut: createProviderDto.rut,
+            const properties = {}
+            await this.providerModel.create({
+                name: createProviderDto.name.toUpperCase(),
+                tin: createProviderDto.tin,
                 email: createProviderDto.email,
                 phone: createProviderDto.phone,
                 nationality: createProviderDto.nationality,
@@ -47,9 +44,6 @@ export class ProvidersService {
             return ({
                 status: StatusCodes.CREATED,
                 send: ReasonPhrases.CREATED,
-                data: {
-                    email: provider.email
-                }
             })
         }
         catch (error) {
@@ -69,7 +63,7 @@ export class ProvidersService {
                     send: ReasonPhrases.BAD_REQUEST,
                     data: {
                         error: error.toString(),
-                        message: error.errors[0].path+" no puede estar vacío",
+                        message: error.parent.detail,
                     }
                 })
             }
@@ -94,53 +88,45 @@ export class ProvidersService {
             if (account) {
                 const isMatch = await bcrypt.compare(authenticateProviderDto.password, account.password);
                 if (isMatch) {
-                    const secret = await new TextEncoder().encode(
-                        "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-                    );
-
+                    const jwtKey= this.configService.get<string>('jwt.key');
+                    const algorithm= this.configService.get<string>('jwt.alg');
+                    const expirationTime= this.configService.get<string>('jwt.exp');
+                    const secret = new TextEncoder().encode(jwtKey);
                     const jwt = await new jose.SignJWT({
                         id: account.id,
                         name: account.name,
-                        rut: account.rut,
+                        tin: account.tin,
                         nationality: account.nationality,
                         birthday: account.birthday,
                         email: account.email,
                         phone: account.phone,
                         address: account.address,
                         properties: account.properties,
-                        password: account.password,
-                        type: "provider",
+                        type: 'provider',
                     })
-                        .setProtectedHeader({ alg: "HS256" })
-                        .setExpirationTime('2h')
+                        .setProtectedHeader({ alg: algorithm })
+                        .setExpirationTime(expirationTime)
                         .sign(secret);
 
                     return ({
                         status: StatusCodes.OK,
                         send: ReasonPhrases.OK,
                         data: {
-                            message: "Usuario autenticado",
                             token: jwt
                         }
                     })
                 }
                 else {
                     return ({
-                        status: StatusCodes.BAD_REQUEST,
-                        send: ReasonPhrases.BAD_REQUEST,
-                        data: {
-                            error: "Contraseña incorrecta",
-                        }
+                        status: StatusCodes.UNAUTHORIZED,
+                        send: ReasonPhrases.UNAUTHORIZED,
                     })
                 }
             }
             else {
                 return ({
-                    status: StatusCodes.BAD_REQUEST,
-                    send: ReasonPhrases.BAD_REQUEST,
-                    data: {
-                        error: "Usuario no encontrado   ",
-                    }
+                    status: StatusCodes.FORBIDDEN,
+                    send: ReasonPhrases.FORBIDDEN,
                 })
             }
         }
@@ -150,116 +136,7 @@ export class ProvidersService {
                 send: ReasonPhrases.INTERNAL_SERVER_ERROR,
                 data: {
                     error: error.toString(),
-                    message: error.message,
-                }
-            })
-        }
-    }
-
-    async reauthenticate(reauthenticateProviderDto: ReauthenticateProviderDto, headers){
-        try {
-            const account = await this.providerModel.findOne({
-                where: {email: reauthenticateProviderDto.email},
-            });
-            if (account) {
-                if (reauthenticateProviderDto.password === account.password) {
-                    const secret = await new TextEncoder().encode(
-                        "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-                    );
-                    const jwt = await new jose.SignJWT({
-                        id: account.id,
-                        name: account.name,
-                        rut: account.rut,
-                        nationality: account.nationality,
-                        birthday: account.birthday,
-                        email: account.email,
-                        phone: account.phone,
-                        address: account.address,
-                        properties: account.properties,
-                        password: account.password,
-                        type: "provider",
-                    })
-                        .setProtectedHeader({ alg: "HS256" })
-                        .setExpirationTime('2h')
-                        .sign(secret);
-
-                    return ({
-                        status: StatusCodes.OK,
-                        send: ReasonPhrases.OK,
-                        data: {
-                            message: "Usuario reautenticado",
-                            token: jwt
-                        }
-                    })
-                }
-                else {
-                    return ({
-                        status: StatusCodes.BAD_REQUEST,
-                        send: ReasonPhrases.BAD_REQUEST,
-                        data: {
-                            error: "Contraseña incorrecta",
-                        }
-                    })
-                }
-            }
-            else {
-                return ({
-                    status: StatusCodes.BAD_REQUEST,
-                    send: ReasonPhrases.BAD_REQUEST,
-                    data: {
-                        error: "Usuario no encontrado   ",
-                    }
-                })
-            }
-        }
-        catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
-        }
-    }
-
-    async requestData(headers){
-        try {
-            const jwt = headers['authorization'].split(" ")[1];
-            const secret = await new TextEncoder().encode(
-                "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-            );
-            const { payload } = await jose.jwtVerify(jwt, secret);
-            const account = await this.providerModel.findOne({
-                where: {id: payload.id},
-            });
-            const provider = {
-                id: account.id,
-                name: account.name,
-                rut: account.rut,
-                nationality: account.nationality,
-                birthday: account.birthday,
-                email: account.email,
-                phone: account.phone,
-                address: account.address,
-		password: account.password,
-                properties: account.properties,
-		type: "provider",
-            }
-            return ({
-                status: StatusCodes.OK,
-                send: ReasonPhrases.OK,
-                data: provider
-            })
-        }
-        catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
+                    message: error.detail,
                 }
             })
         }
@@ -281,17 +158,49 @@ export class ProvidersService {
                 return ({
                     status: StatusCodes.OK,
                     send: ReasonPhrases.OK,
-                    data: {
-                        message: "Contraseña actualizada",
-                    }
                 })
             }
             return ({
                 status: StatusCodes.BAD_REQUEST,
                 send: ReasonPhrases.BAD_REQUEST,
+            })
+        }
+        catch (error) {
+            return ({
+                status: StatusCodes.INTERNAL_SERVER_ERROR,
+                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
                 data: {
-                    message: "Correo no encontrado",
+                    error: error.toString(),
+                    message: error.message,
                 }
+            })
+        }
+    }
+
+    async requestData(headers){
+        try {
+            const jwt = headers['authorization'].split(" ")[1];
+            const jwtKey= this.configService.get<string>('jwt.key');
+            const secret = new TextEncoder().encode(jwtKey);
+            const { payload } = await jose.jwtVerify(jwt, secret);
+            const account = await this.providerModel.findOne({
+                where: {id: payload.id},
+            });
+            const provider = {
+                id: account.id,
+                name: account.name,
+                tin: account.tin,
+                nationality: account.nationality,
+                birthday: account.birthday,
+                email: account.email,
+                phone: account.phone,
+                address: account.address,
+                properties: account.properties,
+            }
+            return ({
+                status: StatusCodes.OK,
+                send: ReasonPhrases.OK,
+                data: provider
             })
         }
         catch (error) {
@@ -309,16 +218,15 @@ export class ProvidersService {
     async updatePersonalData(headers, personalDataDto: UpdateProviderPersonalDataDto){
         try{
             const jwt = headers['authorization'].split(" ")[1];
-            const secret = await new TextEncoder().encode(
-                "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-            );
+            const jwtKey= this.configService.get<string>('jwt.key');
+            const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const provider = await this.providerModel.findOne({
                 where: {id: payload.id},
             });
             await provider.update({
                 name: personalDataDto.name,
-                rut: personalDataDto.rut,
+                tin: personalDataDto.tin,
                 nationality: personalDataDto.nationality,
                 birthday: personalDataDto.birthday,
             })
@@ -326,9 +234,6 @@ export class ProvidersService {
             return ({
                 status: StatusCodes.OK,
                 send: ReasonPhrases.OK,
-                data: {
-                    message: "Información personal actualizada",
-                }
             })
         }
         catch (error) {
@@ -346,9 +251,8 @@ export class ProvidersService {
     async updateContactData(headers, contactDataDto: UpdateProviderContactDataDto){
         try{
             const jwt = headers['authorization'].split(" ")[1];
-            const secret = await new TextEncoder().encode(
-                "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-            );
+            const jwtKey= this.configService.get<string>('jwt.key');
+            const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const provider = await this.providerModel.findOne({
                 where: {id: payload.id},
@@ -362,9 +266,6 @@ export class ProvidersService {
             return ({
                 status: StatusCodes.OK,
                 send: ReasonPhrases.OK,
-                data: {
-                    message: "Información de contacto actualizada",
-                }
             })
         }
         catch (error) {
@@ -382,9 +283,8 @@ export class ProvidersService {
     async updatePropertiesData(headers, propertiesDataDto: UpdatePropertiesDataDto){
         try{
             const jwt = headers['authorization'].split(" ")[1];
-            const secret = await new TextEncoder().encode(
-                "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-            );
+            const jwtKey= this.configService.get<string>('jwt.key');
+            const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const provider = await this.providerModel.findOne({
                 where: {id: payload.id},
@@ -396,9 +296,6 @@ export class ProvidersService {
             return ({
                 status: StatusCodes.OK,
                 send: ReasonPhrases.OK,
-                data: {
-                    message: "Propiedades actualizadas",
-                }
             })
         }
         catch (error) {
@@ -415,34 +312,41 @@ export class ProvidersService {
 
     async updatePhoto(headers, file){
         try{
-            const jwt = headers['authorization'].split(" ")[1];
-            const secret = await new TextEncoder().encode(
-                "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-            );
-            const { payload } = await jose.jwtVerify(jwt, secret);
-            const fs = require("fs");
-            const path = './uploads/provider_'+payload.id+'_'+file.originalname;
-            fs.writeFile(path, file.buffer, (err) => {
-                if (err) throw err;
-            });
-            const provider = await this.providerModel.findOne({
-                where: {id: payload.id},
-            });
-            const properties = provider.properties;
-            properties["photo"] = 'provider_'+payload.id+'_'+file.originalname;
-            await provider.update({
-                properties: JSON.stringify(properties),
-            });
-            await provider.save();
-            return ({
-                status: StatusCodes.OK,
-                send: ReasonPhrases.OK,
-                data: {
-                    message: "Foto de perfil actualizada",
+            if (file){
+                if(file.mimetype.split('/')[0]==='image'){
+                    if(file.size < 10000000){
+                        const jwt = headers['authorization'].split(" ")[1];
+                        const jwtKey= this.configService.get<string>('jwt.key');
+                        const secret = new TextEncoder().encode(jwtKey);
+                        const { payload } = await jose.jwtVerify(jwt, secret);
+                        const fs = require("fs");
+                        const path = './uploads/provider_'+payload.id+'_'+file.originalname;
+                        fs.writeFile(path, file.buffer, (err) => {
+                            if (err) throw err;
+                        });
+                        const provider = await this.providerModel.findOne({
+                            where: {id: payload.id},
+                        });
+                        const properties = provider.properties;
+                        properties["photo"] = 'provider_'+payload.id+'_'+file.originalname;
+                        await provider.update({
+                            properties: JSON.stringify(properties),
+                        });
+                        await provider.save();
+                        return ({
+                            status: StatusCodes.OK,
+                            send: ReasonPhrases.OK,
+                        })
+                    }
                 }
+            }
+            return ({
+                status: StatusCodes.BAD_REQUEST,
+                send: ReasonPhrases.BAD_REQUEST,
             })
         }
         catch (error) {
+            console.log("MY ERROR IS!;", error)
             return ({
                 status: StatusCodes.INTERNAL_SERVER_ERROR,
                 send: ReasonPhrases.INTERNAL_SERVER_ERROR,
@@ -454,32 +358,19 @@ export class ProvidersService {
         }
     }
 
-    async getProvider(id:number){
-
+    async getPhoto(res, filename){
         try {
-            console.log("GET SERVICE: ",id)
-            const service = await this.providerModel.findOne({
-                where: {id: id},
-                include: ["services"],
-            })
-            console.log("GET SERVICaSDASD: ",service)
-
-            const jsonService = JSON.parse(JSON.stringify(service));
-            delete jsonService.rut;
-            delete jsonService.nationality;
-            delete jsonService.birthday;
-            delete jsonService.email;
-            delete jsonService.phone;
-            delete jsonService.address;
-            delete jsonService.properties;
-            delete jsonService.password;
-            delete jsonService.isActive;
-            return ({
-                status: StatusCodes.OK,
-                send: ReasonPhrases.OK,
-                data: jsonService
-            })
+            return of (res.sendFile(join(process.cwd(), './uploads/' + filename), function(error) {
+                if (error) {
+                    res.status(error.statusCode);
+                    res.send({
+                        status: error.statusCode,
+                        send:   getReasonPhrase(error.statusCode),
+                    })
+                }
+            }));
         }
+
         catch (error) {
             return ({
                 status: StatusCodes.INTERNAL_SERVER_ERROR,

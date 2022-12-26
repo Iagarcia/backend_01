@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import configuration from './config/configuration';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProvidersModule } from './providers/providers.module';
@@ -14,6 +13,7 @@ import { Service } from './services/models/service.model';
 import { Schedule } from './schedules/models/schedule.model';
 import { Contract } from './contracts/models/contract.model';
 import { Client } from './clients/models/client.model';
+import configuration from './config/configuration';
 
 @Module({
   imports: [
@@ -30,6 +30,8 @@ import { Client } from './clients/models/client.model';
         password: configService.get('db.password'),
         database: configService.get('db.database'),
         models: [Provider, Service, Schedule, Contract, Client],
+        autoLoadModels: true,
+        synchronize: true,
       }),
       inject: [ConfigService]
     }),

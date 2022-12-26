@@ -14,7 +14,6 @@ export class AuthGuard implements CanActivate {
 
 async function validateRequest(request){
     try {
-	console.log("HEADERS",request.headers);
         const jwt = request.headers['authorization'].split(" ")[1];
         if (!jwt) {
             return(false);

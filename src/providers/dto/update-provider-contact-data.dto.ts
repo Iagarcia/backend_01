@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateProviderContactDataDto {
-    @ApiProperty({ example: 'mc@libertador.cl', description: 'The email of the user' })
+    @ApiProperty({ example: 'jc@mail.cl', description: 'Electronic mail', required: true })
     email: string;
-    @ApiProperty({ example: '987543265', description: 'The phone of the user' })
+    @ApiProperty({ example: '88752111', description: 'Telephone number', required: true })
     phone: string;
-    @ApiProperty({ example: 'Santiago 1785', description: 'The address of the user' })
+    @ApiProperty({ example: 'Independencia 1810', description: 'Reachable location', required: false  })
     address: string;
 }
