@@ -1,64 +1,81 @@
-import { Controller, Post, Get, Put } from '@nestjs/common';
+import { Controller, Post, Get, Put, HttpCode, UseFilters } from '@nestjs/common';
 import { UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { Body, Headers, Param, Res  } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiConsumes, ApiResponse } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { join } from 'path';
 
 import { CreateClientDto } from './dto/create-client.dto';
 import { AuthenticateClientDto } from "./dto/authenticate-client.dto";
-import { ReauthenticateClientDto } from "./dto/reauthenticate-client.dto";
 import { RecoverClientDto } from "./dto/recover-client.dto";
-import { UpdateClientPersonalDataDto } from "./dto/update-client-personal-data.dto";
-import { UpdateClientContactDataDto} from "./dto/update-client-contact-data.dto";
-import { UpdateClientPropertiesDataDto } from "./dto/update-client-properties-data.dto";
-import { UpdateClientPhotoDto} from "./dto/update-client-photo.dto";
+import { UpdateClientPersonalDataDto } from "./dto/update-personal-data.dto";
+import { UpdateClientContactDataDto} from "./dto/update-contact-data.dto";
+import { UpdateClientPropertiesDataDto } from "./dto/update-properties.dto";
+import { UpdateClientPhotoDto} from "./dto/update-photo.dto";
 
 import { ClientsService } from './clients.service';
-import { AuthGuard, AgainGuard } from "./clients.guard";
+import { HttpExceptionFilter } from './clients.filter';
+import { AuthGuard } from "./clients.guard";
+import { ReasonPhrases, StatusCodes }from 'http-status-codes';
 import { of } from "rxjs";
 
 @Controller('/clients')
 export class ClientsController {
     constructor(private readonly clientsService: ClientsService) {}
 
-    @Post()
+    @Post('/create')
+    @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
+    @ApiResponse({ status: StatusCodes.CREATED, description: ReasonPhrases.CREATED})
+    @ApiResponse({ status: StatusCodes.BAD_REQUEST, description: ReasonPhrases.BAD_REQUEST})
+    @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     create(@Body() createClientDto: CreateClientDto){
         return this.clientsService.create(createClientDto);
     }
 
     @Post('/authenticate')
+    @HttpCode(200)
+    @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.BAD_REQUEST, description: ReasonPhrases.BAD_REQUEST})
+    @ApiResponse({ status: StatusCodes.UNAUTHORIZED, description: ReasonPhrases.UNAUTHORIZED})
+    @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     authenticate(@Body() authenticateClientDto: AuthenticateClientDto) {
         return this.clientsService.authenticate(authenticateClientDto);
     }
 
-    @Post('/reauthenticate')
+    @Put('/recover')
+    @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(AgainGuard)
-    reauthenticate(@Body() reauthenticateClientDto: ReauthenticateClientDto, @Headers() headers) {
-        return this.clientsService.reauthenticate(reauthenticateClientDto, headers);
+    @ApiTags('Providers Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.BAD_REQUEST, description: ReasonPhrases.BAD_REQUEST})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
+    recover(@Body() recoverDto: RecoverClientDto) {
+        return this.clientsService.recover(recoverDto);
     }
 
     @Get('/requestData')
+    @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     @ApiBearerAuth('JWT-auth')
     @UseGuards(AuthGuard)
     requestData(@Headers() headers){
         return this.clientsService.requestData(headers);
     }
 
-    @Put('/recover')
-    @ApiTags('Clients Endpoints')
-    @ApiBearerAuth('JWT-auth')
-    recover(@Body() recoverDto: RecoverClientDto) {
-        return this.clientsService.recover(recoverDto);
-    }
-
     @Put('/updatePersonalData')
+    @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     @ApiBearerAuth('JWT-auth')
     @UseGuards(AuthGuard)
     updatePersonalData(@Headers() headers, @Body() personalDataDto: UpdateClientPersonalDataDto) {
@@ -66,7 +83,11 @@ export class ClientsController {
     }
 
     @Put('/updateContactData')
+    @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     @ApiBearerAuth('JWT-auth')
     @UseGuards(AuthGuard)
     updateContactData(@Headers() headers, @Body() contactDataDto: UpdateClientContactDataDto) {
@@ -74,7 +95,11 @@ export class ClientsController {
     }
 
     @Put('/updatePropertiesData')
+    @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     @ApiBearerAuth('JWT-auth')
     @UseGuards(AuthGuard)
     updatePropertiesData(@Headers() headers, @Body() propertiesDataDto: UpdateClientPropertiesDataDto) {
@@ -82,40 +107,28 @@ export class ClientsController {
     }
 
     @Put('/updatePhoto')
+    @UseFilters(new HttpExceptionFilter())
     @ApiConsumes('multipart/form-data')
     @ApiTags('Clients Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.BAD_REQUEST, description: ReasonPhrases.BAD_REQUEST})
+    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR})
     @ApiBearerAuth('JWT-auth')
     @UseGuards(AuthGuard)
     @UseInterceptors(FileInterceptor('file'))
     updatePhoto(
-        @Body() photoDto:UpdateClientPhotoDto,
+        @Body() _photoDto:UpdateClientPhotoDto,
         @Headers() headers,
         @UploadedFile() file: Express.Multer.File) {
-        try{
-            if(file.mimetype.split('/')[0]==='image'){
-                if(file.size < 10000000){
-                    return this.clientsService.updatePhoto(headers, file);
-                }
-                else {
-                    return ({
-                        error: "El archivo excede tamaño máximo permitido"
-                    })
-                }
-            }
-            else {
-                return ({
-                    error: "El archivo no es una foto"
-                })
-            }
-        }
-        catch (error) {
-            return(error)
-        }
+            return this.clientsService.updatePhoto(headers, file);
     }
 
     @Get('/getPhoto/:filename')
+    @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
+    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK})
+    @ApiResponse({ status: StatusCodes.NOT_FOUND, description: ReasonPhrases.NOT_FOUND})
     getPhoto(@Param('filename') filename: string, @Res() res){
-        return of (res.sendFile(join(process.cwd(), './uploads/'+filename)));
+        return this.clientsService.getPhoto(res, filename);
     }
 }

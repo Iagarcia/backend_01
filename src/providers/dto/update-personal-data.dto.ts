@@ -1,9 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty } from 'class-validator';
 
 export class UpdateProviderPersonalDataDto {
-    @ApiProperty({ example: 'José Miguel Carrera Verdugo', description: 'Full name', required: false })
+    @IsNotEmpty()
+    @ApiProperty({ example: 'José Miguel Carrera Verdugo', description: 'Full name', required: true })
     name: string;
-    @ApiProperty({ example: '17851821', description: 'Taxpayer Identification Number', required: false})
+    @IsNotEmpty()
+    @ApiProperty({ example: '17851821', description: 'Taxpayer Identification Number', required: true})
     tin: string;
     @ApiProperty({ example: 'CHL', description: 'Country of nationality', required: false })
     nationality: string;

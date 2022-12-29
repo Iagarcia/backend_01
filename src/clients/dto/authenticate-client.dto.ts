@@ -1,8 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty } from 'class-validator';
 
 export class AuthenticateClientDto {
-    @ApiProperty({ example: 'mc@libertador.cl', description: 'The email of the user' })
+    @IsNotEmpty()
+    @IsEmail()
+    @ApiProperty({ example: 'lt@mail.cl', description: 'Electronic mail', required: true })
     email: string;
-    @ApiProperty({ example: 'mys3cr3tp4ssw0rd', description: 'The password of the user' })
+    @IsNotEmpty()
+    @ApiProperty({ example: 'revolucion', description: 'Code used to confirm identity', required: true  })
     password: string;
 }

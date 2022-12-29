@@ -84,9 +84,9 @@ export class ProvidersService {
                         properties: account.properties,
                         type: 'provider',
                     })
-                        .setProtectedHeader({ alg: algorithm })
-                        .setExpirationTime(expirationTime)
-                        .sign(secret);
+                    .setProtectedHeader({ alg: algorithm })
+                    .setExpirationTime(expirationTime)
+                    .sign(secret);
 
                     return({
                         status: StatusCodes.OK,
@@ -300,7 +300,6 @@ export class ProvidersService {
                 }
             }));
         }
-
         catch (error) {
             throw new InternalServerErrorException()
         }

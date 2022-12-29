@@ -1,23 +1,28 @@
 import { Injectable } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { ConfigService } from '@nestjs/config';
 
 import { CreateClientDto } from './dto/create-client.dto';
 import { AuthenticateClientDto } from "./dto/authenticate-client.dto";
-import { ReauthenticateClientDto } from "./dto/reauthenticate-client.dto";
 import { RecoverClientDto } from "./dto/recover-client.dto";
-import { UpdateClientPersonalDataDto } from "./dto/update-client-personal-data.dto";
-import { UpdateClientContactDataDto } from "./dto/update-client-contact-data.dto";
-import { UpdateClientPropertiesDataDto } from "./dto/update-client-properties-data.dto";
+import { UpdateClientPersonalDataDto } from "./dto/update-personal-data.dto";
+import { UpdateClientContactDataDto } from "./dto/update-contact-data.dto";
+import { UpdateClientPropertiesDataDto } from "./dto/update-properties.dto";
 
 import { Client } from './models/client.model';
 
 import * as bcrypt from "bcrypt";
 import * as jose from 'jose';
-import { ReasonPhrases, StatusCodes } from "http-status-codes";
+import { join } from 'path';
+import { of } from "rxjs";
+import { getReasonPhrase, ReasonPhrases, StatusCodes }from 'http-status-codes';
+
 
 @Injectable()
 export class ClientsService {
     constructor(
+        private configService: ConfigService,
         @InjectModel(Client)
         private readonly clientModel: typeof Client,
     ) {}
@@ -25,23 +30,12 @@ export class ClientsService {
     async create(createClientDto: CreateClientDto) {
         try{
             const salt = await bcrypt.genSalt();
-            console.log(salt);
             const password = createClientDto.password;
-            console.log(password);
             const hash = await bcrypt.hash(password, salt);
-            //const isMatch = await bcrypt.compare(password, hash);
-            //console.log(isMatch)
-            console.log(hash);
-            const properties = {
-                description: '',
-                education : [],
-                work: [],
-                agreement: [],
-                photo: '',
-            }
-            const client = await this.clientModel.create({
+            const properties = {}
+            await this.clientModel.create({
                 name: createClientDto.name,
-                rut: createClientDto.rut,
+                tin: createClientDto.tin,
                 email: createClientDto.email,
                 phone: createClientDto.phone,
                 nationality: createClientDto.nationality,
@@ -53,42 +47,18 @@ export class ClientsService {
             return ({
                 status: StatusCodes.CREATED,
                 send: ReasonPhrases.CREATED,
-                data: {
-                    email: client.email
-                }
             })
         }
         catch (error) {
-            console.log(error.name);
+            console.log("ERROR IS", error)
             if (error.name === 'SequelizeUniqueConstraintError'){
-                return ({
-                    status: StatusCodes.BAD_REQUEST,
-                    send: ReasonPhrases.BAD_REQUEST,
-                    data: {
-                        error: error.toString(),
-                        message: error.parent.detail,
-                    }
-                })
+                throw new BadRequestException('Sequelize Unique Constraint Error')
             }
             else if (error.name === 'SequelizeValidationError'){
-                return ({
-                    status: StatusCodes.BAD_REQUEST,
-                    send: ReasonPhrases.BAD_REQUEST,
-                    data: {
-                        error: error.toString(),
-                        message: error.errors[0].path+" no puede estar vacío",
-                    }
-                })
+                throw new BadRequestException('Sequelize Validation Error')
             }
             else {
-                return ({
-                    status: StatusCodes.INTERNAL_SERVER_ERROR,
-                    send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                    data: {
-                        error: error.toString(),
-                        message: error.message,
-                    }
-                })
+                throw new InternalServerErrorException()
             }
         }
     }
@@ -101,14 +71,14 @@ export class ClientsService {
             if (account) {
                 const isMatch = await bcrypt.compare(authenticateClientDto.password, account.password);
                 if (isMatch) {
-                    const secret = await new TextEncoder().encode(
-                        "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-                    );
-
+                    const jwtKey= this.configService.get<string>('jwt.key');
+                    const algorithm= this.configService.get<string>('jwt.alg');
+                    const expirationTime= this.configService.get<string>('jwt.exp');
+                    const secret = new TextEncoder().encode(jwtKey);
                     const jwt = await new jose.SignJWT({
                         id: account.id,
                         name: account.name,
-                        rut: account.rut,
+                        tin: account.tin,
                         nationality: account.nationality,
                         birthday: account.birthday,
                         email: account.email,
@@ -118,157 +88,34 @@ export class ClientsService {
                         password: account.password,
                         type: "client"
                     })
-                        .setProtectedHeader({ alg: "HS256" })
-                        .setExpirationTime('2h')
-                        .sign(secret);
+                    .setProtectedHeader({ alg: algorithm })
+                    .setExpirationTime(expirationTime)
+                    .sign(secret);
 
                     return ({
                         status: StatusCodes.OK,
                         send: ReasonPhrases.OK,
                         data: {
-                            message: "Usuario autenticado",
                             token: jwt
                         }
                     })
                 }
                 else {
-                    return ({
-                        status: StatusCodes.BAD_REQUEST,
-                        send: ReasonPhrases.BAD_REQUEST,
-                        data: {
-                            error: "Contraseña incorrecta",
-                        }
-                    })
+                    throw new UnauthorizedException()
                 }
             }
             else {
-                return ({
-                    status: StatusCodes.BAD_REQUEST,
-                    send: ReasonPhrases.BAD_REQUEST,
-                    data: {
-                        error: "Usuario no encontrado   ",
-                    }
-                })
+                throw new ForbiddenException()
             }
         }
         catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
-        }
-    }
-
-    async reauthenticate(reauthenticateClientDto: ReauthenticateClientDto, headers){
-        try {
-            const account = await this.clientModel.findOne({
-                where: {email: reauthenticateClientDto.email},
-            });
-            if (account) {
-                if (reauthenticateClientDto.password === account.password) {
-                    const secret = await new TextEncoder().encode(
-                        "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-                    );
-                    const jwt = await new jose.SignJWT({
-                        id: account.id,
-                        name: account.name,
-                        rut: account.rut,
-                        nationality: account.nationality,
-                        birthday: account.birthday,
-                        email: account.email,
-                        phone: account.phone,
-                        address: account.address,
-                        properties: account.properties,
-                        password: account.password,
-                        type: "client",
-                    })
-                        .setProtectedHeader({ alg: "HS256" })
-                        .setExpirationTime('2h')
-                        .sign(secret);
-
-                    return ({
-                        status: StatusCodes.OK,
-                        send: ReasonPhrases.OK,
-                        data: {
-                            message: "Usuario reautenticado",
-                            token: jwt
-                        }
-                    })
-                }
-                else {
-                    return ({
-                        status: StatusCodes.BAD_REQUEST,
-                        send: ReasonPhrases.BAD_REQUEST,
-                        data: {
-                            error: "Contraseña incorrecta",
-                        }
-                    })
-                }
+            if (error.status === StatusCodes.UNAUTHORIZED){
+                throw new UnauthorizedException()
             }
-            else {
-                return ({
-                    status: StatusCodes.BAD_REQUEST,
-                    send: ReasonPhrases.BAD_REQUEST,
-                    data: {
-                        error: "Usuario no encontrado   ",
-                    }
-                })
+            if (error.status === StatusCodes.FORBIDDEN){
+                throw new ForbiddenException()
             }
-        }
-        catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
-        }
-    }
-
-    async requestData(headers){
-        try {
-            const jwt = headers['authorization'].split(" ")[1];
-            const secret = await new TextEncoder().encode(
-                "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-            );
-            const { payload } = await jose.jwtVerify(jwt, secret);
-            const account = await this.clientModel.findOne({
-                where: {id: payload.id},
-            });
-            const client = {
-                id: account.id,
-                name: account.name,
-                rut: account.rut,
-                nationality: account.nationality,
-                birthday: account.birthday,
-                email: account.email,
-                phone: account.phone,
-                address: account.address,
-		password: account.password,
-                properties: account.properties,
-		type: "client",
-            }
-            return ({
-                status: StatusCodes.OK,
-                send: ReasonPhrases.OK,
-                data: client
-            })
-        }
-        catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
+            throw new InternalServerErrorException()
         }
     }
 
@@ -288,44 +135,65 @@ export class ClientsService {
                 return ({
                     status: StatusCodes.OK,
                     send: ReasonPhrases.OK,
-                    data: {
-                        message: "Contraseña actualizada",
-                    }
                 })
             }
+            else {
+                throw new BadRequestException()
+            }
+        }
+        catch (error) {
+            if (error.status === StatusCodes.BAD_REQUEST){
+                throw new BadRequestException()
+            }
+            throw new InternalServerErrorException()
+        }
+    }
+
+    async requestData(headers){
+        try {
+            const jwt = headers['authorization'].split(" ")[1];
+            const jwtKey= this.configService.get<string>('jwt.key');
+            const secret = new TextEncoder().encode(jwtKey);
+            const { payload } = await jose.jwtVerify(jwt, secret);
+            const account = await this.clientModel.findOne({
+                where: {id: payload.id},
+            });
+            const client = {
+                id: account.id,
+                name: account.name,
+                tin: account.tin,
+                nationality: account.nationality,
+                birthday: account.birthday,
+                email: account.email,
+                phone: account.phone,
+                address: account.address,
+		        password: account.password,
+                properties: account.properties,
+		        type: "client",
+            }
             return ({
-                status: StatusCodes.BAD_REQUEST,
-                send: ReasonPhrases.BAD_REQUEST,
-                data: {
-                    message: "Correo no encontrado",
-                }
+                status: StatusCodes.OK,
+                send: ReasonPhrases.OK,
+                data: client
             })
         }
         catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
+            throw new InternalServerErrorException()
         }
     }
 
     async updatePersonalData(headers, personalDataDto: UpdateClientPersonalDataDto){
         try{
             const jwt = headers['authorization'].split(" ")[1];
-            const secret = await new TextEncoder().encode(
-                "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-            );
+            const jwtKey= this.configService.get<string>('jwt.key');
+            const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const client = await this.clientModel.findOne({
                 where: {id: payload.id},
             });
             await client.update({
                 name: personalDataDto.name,
-                rut: personalDataDto.rut,
+                tin: personalDataDto.tin,
                 nationality: personalDataDto.nationality,
                 birthday: personalDataDto.birthday,
             })
@@ -333,29 +201,18 @@ export class ClientsService {
             return ({
                 status: StatusCodes.OK,
                 send: ReasonPhrases.OK,
-                data: {
-                    message: "Información personal actualizada",
-                }
             })
         }
         catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
+            throw new InternalServerErrorException()
         }
     }
 
     async updateContactData(headers, contactDataDto: UpdateClientContactDataDto){
         try{
             const jwt = headers['authorization'].split(" ")[1];
-            const secret = await new TextEncoder().encode(
-                "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-            );
+            const jwtKey= this.configService.get<string>('jwt.key');
+            const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const client = await this.clientModel.findOne({
                 where: {id: payload.id},
@@ -369,29 +226,18 @@ export class ClientsService {
             return ({
                 status: StatusCodes.OK,
                 send: ReasonPhrases.OK,
-                data: {
-                    message: "Información de contacto actualizada",
-                }
             })
         }
         catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
+            throw new InternalServerErrorException()
         }
     }
 
     async updatePropertiesData(headers, propertiesDataDto: UpdateClientPropertiesDataDto){
         try{
             const jwt = headers['authorization'].split(" ")[1];
-            const secret = await new TextEncoder().encode(
-                "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-            );
+            const jwtKey= this.configService.get<string>('jwt.key');
+            const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const client = await this.clientModel.findOne({
                 where: {id: payload.id},
@@ -403,61 +249,65 @@ export class ClientsService {
             return ({
                 status: StatusCodes.OK,
                 send: ReasonPhrases.OK,
-                data: {
-                    message: "Propiedades actualizadas",
-                }
             })
         }
         catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
+            throw new InternalServerErrorException()
         }
     }
 
     async updatePhoto(headers, file){
         try{
             const jwt = headers['authorization'].split(" ")[1];
-            const secret = await new TextEncoder().encode(
-                "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-            );
+            const jwtKey= this.configService.get<string>('jwt.key');
+            const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
-            const fs = require("fs");
-            const path = './uploads/client_'+payload.id+'_'+file.originalname;
-            fs.writeFile(path, file.buffer, (err) => {
-                if (err) throw err;
-            });
-            const client = await this.clientModel.findOne({
-                where: {id: payload.id},
-            });
-            const properties = client.properties;
-            properties["photo"] = 'client_'+payload.id+'_'+file.originalname;
-            await client.update({
-                properties: JSON.stringify(properties),
-            });
-            await client.save();
-            return ({
-                status: StatusCodes.OK,
-                send: ReasonPhrases.OK,
-                data: {
-                    message: "Foto de perfil actualizada",
-                }
-            })
+            if ( file && file.mimetype.split('/')[0]==='image' && file.size < 10000000 ){
+                const fs = require("fs");
+                const path = './uploads/client_'+payload.id+'_'+file.originalname;
+                fs.writeFile(path, file.buffer, (err) => {
+                    if (err) throw err;
+                });
+                const client = await this.clientModel.findOne({
+                    where: {id: payload.id},
+                });
+                const properties = client.properties;
+                properties["photo"] = 'client_'+payload.id+'_'+file.originalname;
+                await client.update({
+                    properties: JSON.stringify(properties),
+                });
+                await client.save();
+                return ({
+                    status: StatusCodes.OK,
+                    send: ReasonPhrases.OK,
+                })
+            }
+            else {
+                throw new BadRequestException();
+            }
         }
         catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
+            if (error.status === StatusCodes.BAD_REQUEST){
+                throw new BadRequestException();
+            }
+            throw new InternalServerErrorException()
+        }
+    }
+
+    async getPhoto(res, filename:string){
+        try {
+            return of (res.sendFile(join(process.cwd(), './uploads/' + filename), function(error) {
+                if (error) {
+                    res.status(StatusCodes.NOT_FOUND)
+                    res.send({
+                        status: error.statusCode,
+                        send:   getReasonPhrase(error.statusCode),
+                    })
                 }
-            })
+            }));
+        }
+        catch (error) {
+            throw new InternalServerErrorException()
         }
     }
 }
