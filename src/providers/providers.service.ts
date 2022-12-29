@@ -1,13 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { UnauthorizedException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ConfigService } from '@nestjs/config';
 
 import { CreateProviderDto } from './dto/create-provider.dto';
 import { AuthenticateProviderDto } from "./dto/authenticate-provider.dto";
 import { RecoverProviderDto } from "./dto/recover-provider.dto";
-import { UpdateProviderPersonalDataDto } from "./dto/update-provider-personal-data.dto";
-import { UpdateProviderContactDataDto } from "./dto/update-provider-contact-data.dto";
-import { UpdatePropertiesDataDto } from "./dto/update-properties-data.dto";
+import { UpdateProviderPersonalDataDto } from "./dto/update-personal-data.dto";
+import { UpdateProviderContactDataDto } from "./dto/update-contact-data.dto";
+import { UpdateProviderPropertiesDto } from "./dto/update-properties.dto";
 
 import { Provider } from './models/provider.model';
 import * as bcrypt from 'bcrypt';
@@ -48,34 +49,13 @@ export class ProvidersService {
         }
         catch (error) {
             if (error.name === 'SequelizeUniqueConstraintError'){
-                return ({
-                    status: StatusCodes.BAD_REQUEST,
-                    send: ReasonPhrases.BAD_REQUEST,
-                    data: {
-                        error: error.toString(),
-                        message: error.parent.detail,
-                    }
-                })
+                throw new BadRequestException('Sequelize Unique Constraint Error')
             }
             else if (error.name === 'SequelizeValidationError'){
-                return ({
-                    status: StatusCodes.BAD_REQUEST,
-                    send: ReasonPhrases.BAD_REQUEST,
-                    data: {
-                        error: error.toString(),
-                        message: error.parent.detail,
-                    }
-                })
+                throw new BadRequestException('Sequelize Validation Error')
             }
             else {
-                return ({
-                    status: StatusCodes.INTERNAL_SERVER_ERROR,
-                    send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                    data: {
-                        error: error.toString(),
-                        message: error.message,
-                    }
-                })
+                throw new InternalServerErrorException()
             }
         }
     }
@@ -97,7 +77,7 @@ export class ProvidersService {
                         name: account.name,
                         tin: account.tin,
                         nationality: account.nationality,
-                        birthday: account.birthday,
+                        birthday: account.birthday, 
                         email: account.email,
                         phone: account.phone,
                         address: account.address,
@@ -108,7 +88,7 @@ export class ProvidersService {
                         .setExpirationTime(expirationTime)
                         .sign(secret);
 
-                    return ({
+                    return({
                         status: StatusCodes.OK,
                         send: ReasonPhrases.OK,
                         data: {
@@ -117,28 +97,21 @@ export class ProvidersService {
                     })
                 }
                 else {
-                    return ({
-                        status: StatusCodes.UNAUTHORIZED,
-                        send: ReasonPhrases.UNAUTHORIZED,
-                    })
+                    throw new UnauthorizedException()
                 }
             }
             else {
-                return ({
-                    status: StatusCodes.FORBIDDEN,
-                    send: ReasonPhrases.FORBIDDEN,
-                })
+                throw new ForbiddenException()
             }
         }
         catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.detail,
-                }
-            })
+            if (error.status === StatusCodes.UNAUTHORIZED){
+                throw new UnauthorizedException()
+            }
+            if (error.status === StatusCodes.FORBIDDEN){
+                throw new ForbiddenException()
+            }
+            throw new InternalServerErrorException()
         }
     }
 
@@ -155,29 +128,24 @@ export class ProvidersService {
                     password: hash,
                 })
                 await provider.save();
-                return ({
+                return({
                     status: StatusCodes.OK,
                     send: ReasonPhrases.OK,
                 })
             }
-            return ({
-                status: StatusCodes.BAD_REQUEST,
-                send: ReasonPhrases.BAD_REQUEST,
-            })
+            else {
+                throw new BadRequestException()
+            }
         }
         catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
+            if (error.status === StatusCodes.BAD_REQUEST){
+                throw new BadRequestException()
+            }
+            throw new InternalServerErrorException()
         }
     }
 
-    async requestData(headers){
+    async requestData(headers: Headers){
         try {
             const jwt = headers['authorization'].split(" ")[1];
             const jwtKey= this.configService.get<string>('jwt.key');
@@ -204,18 +172,11 @@ export class ProvidersService {
             })
         }
         catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
+            throw new InternalServerErrorException()
         }
     }
 
-    async updatePersonalData(headers, personalDataDto: UpdateProviderPersonalDataDto){
+    async updatePersonalData(headers: Headers, personalDataDto: UpdateProviderPersonalDataDto){
         try{
             const jwt = headers['authorization'].split(" ")[1];
             const jwtKey= this.configService.get<string>('jwt.key');
@@ -237,18 +198,11 @@ export class ProvidersService {
             })
         }
         catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
+            throw new InternalServerErrorException()
         }
     }
 
-    async updateContactData(headers, contactDataDto: UpdateProviderContactDataDto){
+    async updateContactData(headers: Headers, contactDataDto: UpdateProviderContactDataDto){
         try{
             const jwt = headers['authorization'].split(" ")[1];
             const jwtKey= this.configService.get<string>('jwt.key');
@@ -269,18 +223,11 @@ export class ProvidersService {
             })
         }
         catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
+            throw new InternalServerErrorException()
         }
     }
 
-    async updatePropertiesData(headers, propertiesDataDto: UpdatePropertiesDataDto){
+    async updatePropertiesData(headers: Headers, propertiesDataDto: UpdateProviderPropertiesDto){
         try{
             const jwt = headers['authorization'].split(" ")[1];
             const jwtKey= this.configService.get<string>('jwt.key');
@@ -299,70 +246,53 @@ export class ProvidersService {
             })
         }
         catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
+            throw new InternalServerErrorException()
         }
     }
 
-    async updatePhoto(headers, file){
+    async updatePhoto(headers: Headers, file: Express.Multer.File){
         try{
-            if (file){
-                if(file.mimetype.split('/')[0]==='image'){
-                    if(file.size < 10000000){
-                        const jwt = headers['authorization'].split(" ")[1];
-                        const jwtKey= this.configService.get<string>('jwt.key');
-                        const secret = new TextEncoder().encode(jwtKey);
-                        const { payload } = await jose.jwtVerify(jwt, secret);
-                        const fs = require("fs");
-                        const path = './uploads/provider_'+payload.id+'_'+file.originalname;
-                        fs.writeFile(path, file.buffer, (err) => {
-                            if (err) throw err;
-                        });
-                        const provider = await this.providerModel.findOne({
-                            where: {id: payload.id},
-                        });
-                        const properties = provider.properties;
-                        properties["photo"] = 'provider_'+payload.id+'_'+file.originalname;
-                        await provider.update({
-                            properties: JSON.stringify(properties),
-                        });
-                        await provider.save();
-                        return ({
-                            status: StatusCodes.OK,
-                            send: ReasonPhrases.OK,
-                        })
-                    }
-                }
+            const jwt = headers['authorization'].split(" ")[1];
+            const jwtKey= this.configService.get<string>('jwt.key');
+            const secret = new TextEncoder().encode(jwtKey);
+            const { payload } = await jose.jwtVerify(jwt, secret);
+            if ( file && file.mimetype.split('/')[0]==='image' && file.size < 10000000 ){
+                const fs = require("fs");
+                const path = './uploads/provider_'+payload.id+'_'+file.originalname;
+                fs.writeFile(path, file.buffer, (err) => {
+                    if (err) throw err;
+                });
+                const provider = await this.providerModel.findOne({
+                    where: {id: payload.id},
+                });
+                const properties = provider.properties;
+                properties["photo"] = 'provider_'+payload.id+'_'+file.originalname;
+                await provider.update({
+                    properties: JSON.stringify(properties),
+                });
+                await provider.save();
+                return({
+                    status: StatusCodes.OK,
+                    send: ReasonPhrases.OK,
+                })
             }
-            return ({
-                status: StatusCodes.BAD_REQUEST,
-                send: ReasonPhrases.BAD_REQUEST,
-            })
+            else {
+                throw new BadRequestException();
+            }
         }
         catch (error) {
-            console.log("MY ERROR IS!;", error)
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
+            if (error.status === StatusCodes.BAD_REQUEST){
+                throw new BadRequestException();
+            }
+            throw new InternalServerErrorException()
         }
     }
 
-    async getPhoto(res, filename){
+    async getPhoto(res, filename:string){
         try {
             return of (res.sendFile(join(process.cwd(), './uploads/' + filename), function(error) {
                 if (error) {
-                    res.status(error.statusCode);
+                    res.status(StatusCodes.NOT_FOUND)
                     res.send({
                         status: error.statusCode,
                         send:   getReasonPhrase(error.statusCode),
@@ -372,14 +302,7 @@ export class ProvidersService {
         }
 
         catch (error) {
-            return ({
-                status: StatusCodes.INTERNAL_SERVER_ERROR,
-                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-                data: {
-                    error: error.toString(),
-                    message: error.message,
-                }
-            })
+            throw new InternalServerErrorException()
         }
     }
 }

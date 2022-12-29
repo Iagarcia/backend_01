@@ -3,9 +3,9 @@ http:
 db:
     host: 'localhost'
     port: 5432
-    username: 
-    password: 
-    database: 
+    username: 'vidat'
+    password: 'v1d4t'
+    database: 'vidat'
 
 doc:
     path: '/api'

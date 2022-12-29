@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RecoverProviderDto {
-    @ApiProperty({ example: 'mc@libertador.cl', description: 'The user email' })
+    @ApiProperty({ example: 'jc@mail.cl', description: 'Electronic mail', required: true })
     email: string;
-    @ApiProperty({ example: 'mys3cr3tp4ssw0rd', description: 'The user new password' })
+    @ApiProperty({ example: 'libertad', description: 'Code used to confirm identity', required: true  })
     password: string;
 }
