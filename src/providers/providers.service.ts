@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpExceptionOptions, Injectable } from '@nestjs/common';
 import { UnauthorizedException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ConfigService } from '@nestjs/config';
@@ -15,7 +15,7 @@ import * as bcrypt from 'bcrypt';
 import * as jose from 'jose';
 import { join } from 'path';
 import { of } from "rxjs";
-import { getReasonPhrase, ReasonPhrases, StatusCodes }from 'http-status-codes';
+import { getReasonPhrase, ReasonPhrases, StatusCodes } from 'http-status-codes';
 
 @Injectable()
 export class ProvidersService {
@@ -23,10 +23,10 @@ export class ProvidersService {
         private configService: ConfigService,
         @InjectModel(Provider)
         private readonly providerModel: typeof Provider,
-    ) {}
+    ) { }
 
-    async create(createProviderDto: CreateProviderDto){
-        try{
+    async create(createProviderDto: CreateProviderDto) {
+        try {
             const salt = await bcrypt.genSalt();
             const password = createProviderDto.password;
             const hash = await bcrypt.hash(password, salt);
@@ -48,10 +48,10 @@ export class ProvidersService {
             })
         }
         catch (error) {
-            if (error.name === 'SequelizeUniqueConstraintError'){
+            if (error.name === 'SequelizeUniqueConstraintError') {
                 throw new BadRequestException('Sequelize Unique Constraint Error')
             }
-            else if (error.name === 'SequelizeValidationError'){
+            else if (error.name === 'SequelizeValidationError') {
                 throw new BadRequestException('Sequelize Validation Error')
             }
             else {
@@ -60,35 +60,35 @@ export class ProvidersService {
         }
     }
 
-    async authenticate(authenticateProviderDto: AuthenticateProviderDto){
+    async authenticate(authenticateProviderDto: AuthenticateProviderDto) {
         try {
             const account = await this.providerModel.findOne({
-                where: {email: authenticateProviderDto.email},
+                where: { email: authenticateProviderDto.email },
             });
             if (account) {
                 const isMatch = await bcrypt.compare(authenticateProviderDto.password, account.password);
                 if (isMatch) {
-                    const jwtKey= this.configService.get<string>('jwt.key');
-                    const algorithm= this.configService.get<string>('jwt.alg');
-                    const expirationTime= this.configService.get<string>('jwt.exp');
+                    const jwtKey = this.configService.get<string>('jwt.key');
+                    const algorithm = this.configService.get<string>('jwt.alg');
+                    const expirationTime = this.configService.get<string>('jwt.exp');
                     const secret = new TextEncoder().encode(jwtKey);
                     const jwt = await new jose.SignJWT({
                         id: account.id,
                         name: account.name,
                         tin: account.tin,
                         nationality: account.nationality,
-                        birthday: account.birthday, 
+                        birthday: account.birthday,
                         email: account.email,
                         phone: account.phone,
                         address: account.address,
                         properties: account.properties,
                         type: 'provider',
                     })
-                    .setProtectedHeader({ alg: algorithm })
-                    .setExpirationTime(expirationTime)
-                    .sign(secret);
+                        .setProtectedHeader({ alg: algorithm })
+                        .setExpirationTime(expirationTime)
+                        .sign(secret);
 
-                    return({
+                    return ({
                         status: StatusCodes.OK,
                         send: ReasonPhrases.OK,
                         data: {
@@ -105,22 +105,22 @@ export class ProvidersService {
             }
         }
         catch (error) {
-            if (error.status === StatusCodes.UNAUTHORIZED){
+            if (error.status === StatusCodes.UNAUTHORIZED) {
                 throw new UnauthorizedException()
             }
-            if (error.status === StatusCodes.FORBIDDEN){
+            if (error.status === StatusCodes.FORBIDDEN) {
                 throw new ForbiddenException()
             }
             throw new InternalServerErrorException()
         }
     }
 
-    async recover(recoverDto: RecoverProviderDto){
-        try{
+    async recover(recoverDto: RecoverProviderDto) {
+        try {
             const provider = await this.providerModel.findOne({
-                where: {email: recoverDto.email},
+                where: { email: recoverDto.email },
             });
-            if (provider){
+            if (provider) {
                 const salt = await bcrypt.genSalt();
                 const password = recoverDto.password;
                 const hash = await bcrypt.hash(password, salt);
@@ -128,7 +128,7 @@ export class ProvidersService {
                     password: hash,
                 })
                 await provider.save();
-                return({
+                return ({
                     status: StatusCodes.OK,
                     send: ReasonPhrases.OK,
                 })
@@ -138,21 +138,21 @@ export class ProvidersService {
             }
         }
         catch (error) {
-            if (error.status === StatusCodes.BAD_REQUEST){
+            if (error.status === StatusCodes.BAD_REQUEST) {
                 throw new BadRequestException()
             }
             throw new InternalServerErrorException()
         }
     }
 
-    async requestData(headers: Headers){
+    async requestData(headers: Headers) {
         try {
             const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey= this.configService.get<string>('jwt.key');
+            const jwtKey = this.configService.get<string>('jwt.key');
             const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const account = await this.providerModel.findOne({
-                where: {id: payload.id},
+                where: { id: payload.id },
             });
             const provider = {
                 id: account.id,
@@ -176,17 +176,17 @@ export class ProvidersService {
         }
     }
 
-    async updatePersonalData(headers: Headers, personalDataDto: UpdateProviderPersonalDataDto){
-        try{
+    async updatePersonalData(headers: Headers, personalDataDto: UpdateProviderPersonalDataDto) {
+        try {
             const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey= this.configService.get<string>('jwt.key');
+            const jwtKey = this.configService.get<string>('jwt.key');
             const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const provider = await this.providerModel.findOne({
-                where: {id: payload.id},
+                where: { id: payload.id },
             });
             await provider.update({
-                name: personalDataDto.name,
+                name: personalDataDto.name.toUpperCase(),
                 tin: personalDataDto.tin,
                 nationality: personalDataDto.nationality,
                 birthday: personalDataDto.birthday,
@@ -202,14 +202,14 @@ export class ProvidersService {
         }
     }
 
-    async updateContactData(headers: Headers, contactDataDto: UpdateProviderContactDataDto){
-        try{
+    async updateContactData(headers: Headers, contactDataDto: UpdateProviderContactDataDto) {
+        try {
             const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey= this.configService.get<string>('jwt.key');
+            const jwtKey = this.configService.get<string>('jwt.key');
             const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const provider = await this.providerModel.findOne({
-                where: {id: payload.id},
+                where: { id: payload.id },
             });
             await provider.update({
                 email: contactDataDto.email,
@@ -227,14 +227,14 @@ export class ProvidersService {
         }
     }
 
-    async updatePropertiesData(headers: Headers, propertiesDataDto: UpdateProviderPropertiesDto){
-        try{
+    async updatePropertiesData(headers: Headers, propertiesDataDto: UpdateProviderPropertiesDto) {
+        try {
             const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey= this.configService.get<string>('jwt.key');
+            const jwtKey = this.configService.get<string>('jwt.key');
             const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const provider = await this.providerModel.findOne({
-                where: {id: payload.id},
+                where: { id: payload.id },
             });
             await provider.update({
                 properties: propertiesDataDto.properties,
@@ -250,28 +250,28 @@ export class ProvidersService {
         }
     }
 
-    async updatePhoto(headers: Headers, file: Express.Multer.File){
-        try{
+    async updatePhoto(headers: Headers, file: Express.Multer.File) {
+        try {
             const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey= this.configService.get<string>('jwt.key');
+            const jwtKey = this.configService.get<string>('jwt.key');
             const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
-            if ( file && file.mimetype.split('/')[0]==='image' && file.size < 10000000 ){
+            if (file && file.mimetype.split('/')[0] === 'image' && file.size < 10000000) {
                 const fs = require("fs");
-                const path = './uploads/provider_'+payload.id+'_'+file.originalname;
+                const path = './uploads/provider_' + payload.id + '_' + file.originalname;
                 fs.writeFile(path, file.buffer, (err) => {
                     if (err) throw err;
                 });
                 const provider = await this.providerModel.findOne({
-                    where: {id: payload.id},
+                    where: { id: payload.id },
                 });
                 const properties = provider.properties;
-                properties["photo"] = 'provider_'+payload.id+'_'+file.originalname;
+                properties["photo"] = 'provider_' + payload.id + '_' + file.originalname;
                 await provider.update({
                     properties: JSON.stringify(properties),
                 });
                 await provider.save();
-                return({
+                return ({
                     status: StatusCodes.OK,
                     send: ReasonPhrases.OK,
                 })
@@ -281,21 +281,21 @@ export class ProvidersService {
             }
         }
         catch (error) {
-            if (error.status === StatusCodes.BAD_REQUEST){
+            if (error.status === StatusCodes.BAD_REQUEST) {
                 throw new BadRequestException();
             }
             throw new InternalServerErrorException()
         }
     }
 
-    async getPhoto(res, filename:string){
+    async getPhoto(res, filename: string) {
         try {
-            return of (res.sendFile(join(process.cwd(), './uploads/' + filename), function(error) {
+            return of(res.sendFile(join(process.cwd(), './uploads/' + filename), function (error) {
                 if (error) {
                     res.status(StatusCodes.NOT_FOUND)
                     res.send({
                         status: error.statusCode,
-                        send:   getReasonPhrase(error.statusCode),
+                        send: getReasonPhrase(error.statusCode),
                     })
                 }
             }));

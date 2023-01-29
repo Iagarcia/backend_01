@@ -11,13 +11,11 @@ import { UpdateClientContactDataDto } from "./dto/update-contact-data.dto";
 import { UpdateClientPropertiesDataDto } from "./dto/update-properties.dto";
 
 import { Client } from './models/client.model';
-
 import * as bcrypt from "bcrypt";
 import * as jose from 'jose';
 import { join } from 'path';
 import { of } from "rxjs";
-import { getReasonPhrase, ReasonPhrases, StatusCodes }from 'http-status-codes';
-
+import { getReasonPhrase, ReasonPhrases, StatusCodes } from 'http-status-codes';
 
 @Injectable()
 export class ClientsService {
@@ -25,10 +23,10 @@ export class ClientsService {
         private configService: ConfigService,
         @InjectModel(Client)
         private readonly clientModel: typeof Client,
-    ) {}
+    ) { }
 
     async create(createClientDto: CreateClientDto) {
-        try{
+        try {
             const salt = await bcrypt.genSalt();
             const password = createClientDto.password;
             const hash = await bcrypt.hash(password, salt);
@@ -50,11 +48,10 @@ export class ClientsService {
             })
         }
         catch (error) {
-            console.log("ERROR IS", error)
-            if (error.name === 'SequelizeUniqueConstraintError'){
+            if (error.name === 'SequelizeUniqueConstraintError') {
                 throw new BadRequestException('Sequelize Unique Constraint Error')
             }
-            else if (error.name === 'SequelizeValidationError'){
+            else if (error.name === 'SequelizeValidationError') {
                 throw new BadRequestException('Sequelize Validation Error')
             }
             else {
@@ -63,17 +60,17 @@ export class ClientsService {
         }
     }
 
-    async authenticate(authenticateClientDto: AuthenticateClientDto){
+    async authenticate(authenticateClientDto: AuthenticateClientDto) {
         try {
             const account = await this.clientModel.findOne({
-                where: {email: authenticateClientDto.email},
+                where: { email: authenticateClientDto.email },
             });
             if (account) {
                 const isMatch = await bcrypt.compare(authenticateClientDto.password, account.password);
                 if (isMatch) {
-                    const jwtKey= this.configService.get<string>('jwt.key');
-                    const algorithm= this.configService.get<string>('jwt.alg');
-                    const expirationTime= this.configService.get<string>('jwt.exp');
+                    const jwtKey = this.configService.get<string>('jwt.key');
+                    const algorithm = this.configService.get<string>('jwt.alg');
+                    const expirationTime = this.configService.get<string>('jwt.exp');
                     const secret = new TextEncoder().encode(jwtKey);
                     const jwt = await new jose.SignJWT({
                         id: account.id,
@@ -85,12 +82,11 @@ export class ClientsService {
                         phone: account.phone,
                         address: account.address,
                         properties: account.properties,
-                        password: account.password,
                         type: "client"
                     })
-                    .setProtectedHeader({ alg: algorithm })
-                    .setExpirationTime(expirationTime)
-                    .sign(secret);
+                        .setProtectedHeader({ alg: algorithm })
+                        .setExpirationTime(expirationTime)
+                        .sign(secret);
 
                     return ({
                         status: StatusCodes.OK,
@@ -109,22 +105,22 @@ export class ClientsService {
             }
         }
         catch (error) {
-            if (error.status === StatusCodes.UNAUTHORIZED){
+            if (error.status === StatusCodes.UNAUTHORIZED) {
                 throw new UnauthorizedException()
             }
-            if (error.status === StatusCodes.FORBIDDEN){
+            if (error.status === StatusCodes.FORBIDDEN) {
                 throw new ForbiddenException()
             }
             throw new InternalServerErrorException()
         }
     }
 
-    async recover(recoverDto: RecoverClientDto){
-        try{
+    async recover(recoverDto: RecoverClientDto) {
+        try {
             const client = await this.clientModel.findOne({
-                where: {email: recoverDto.email},
+                where: { email: recoverDto.email },
             });
-            if (client){
+            if (client) {
                 const salt = await bcrypt.genSalt();
                 const password = recoverDto.password;
                 const hash = await bcrypt.hash(password, salt);
@@ -142,21 +138,21 @@ export class ClientsService {
             }
         }
         catch (error) {
-            if (error.status === StatusCodes.BAD_REQUEST){
+            if (error.status === StatusCodes.BAD_REQUEST) {
                 throw new BadRequestException()
             }
             throw new InternalServerErrorException()
         }
     }
 
-    async requestData(headers){
+    async requestData(headers: Headers) {
         try {
             const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey= this.configService.get<string>('jwt.key');
+            const jwtKey = this.configService.get<string>('jwt.key');
             const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const account = await this.clientModel.findOne({
-                where: {id: payload.id},
+                where: { id: payload.id },
             });
             const client = {
                 id: account.id,
@@ -167,9 +163,7 @@ export class ClientsService {
                 email: account.email,
                 phone: account.phone,
                 address: account.address,
-		        password: account.password,
                 properties: account.properties,
-		        type: "client",
             }
             return ({
                 status: StatusCodes.OK,
@@ -182,14 +176,14 @@ export class ClientsService {
         }
     }
 
-    async updatePersonalData(headers, personalDataDto: UpdateClientPersonalDataDto){
-        try{
+    async updatePersonalData(headers: Headers, personalDataDto: UpdateClientPersonalDataDto) {
+        try {
             const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey= this.configService.get<string>('jwt.key');
+            const jwtKey = this.configService.get<string>('jwt.key');
             const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const client = await this.clientModel.findOne({
-                where: {id: payload.id},
+                where: { id: payload.id },
             });
             await client.update({
                 name: personalDataDto.name,
@@ -208,14 +202,14 @@ export class ClientsService {
         }
     }
 
-    async updateContactData(headers, contactDataDto: UpdateClientContactDataDto){
-        try{
+    async updateContactData(headers: Headers, contactDataDto: UpdateClientContactDataDto) {
+        try {
             const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey= this.configService.get<string>('jwt.key');
+            const jwtKey = this.configService.get<string>('jwt.key');
             const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const client = await this.clientModel.findOne({
-                where: {id: payload.id},
+                where: { id: payload.id },
             });
             await client.update({
                 email: contactDataDto.email,
@@ -233,14 +227,14 @@ export class ClientsService {
         }
     }
 
-    async updatePropertiesData(headers, propertiesDataDto: UpdateClientPropertiesDataDto){
-        try{
+    async updatePropertiesData(headers: Headers, propertiesDataDto: UpdateClientPropertiesDataDto) {
+        try {
             const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey= this.configService.get<string>('jwt.key');
+            const jwtKey = this.configService.get<string>('jwt.key');
             const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
             const client = await this.clientModel.findOne({
-                where: {id: payload.id},
+                where: { id: payload.id },
             });
             await client.update({
                 properties: propertiesDataDto.properties,
@@ -256,23 +250,23 @@ export class ClientsService {
         }
     }
 
-    async updatePhoto(headers, file){
-        try{
+    async updatePhoto(headers: Headers, file: Express.Multer.File) {
+        try {
             const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey= this.configService.get<string>('jwt.key');
+            const jwtKey = this.configService.get<string>('jwt.key');
             const secret = new TextEncoder().encode(jwtKey);
             const { payload } = await jose.jwtVerify(jwt, secret);
-            if ( file && file.mimetype.split('/')[0]==='image' && file.size < 10000000 ){
+            if (file && file.mimetype.split('/')[0] === 'image' && file.size < 10000000) {
                 const fs = require("fs");
-                const path = './uploads/client_'+payload.id+'_'+file.originalname;
+                const path = './uploads/client_' + payload.id + '_' + file.originalname;
                 fs.writeFile(path, file.buffer, (err) => {
                     if (err) throw err;
                 });
                 const client = await this.clientModel.findOne({
-                    where: {id: payload.id},
+                    where: { id: payload.id },
                 });
                 const properties = client.properties;
-                properties["photo"] = 'client_'+payload.id+'_'+file.originalname;
+                properties["photo"] = 'client_' + payload.id + '_' + file.originalname;
                 await client.update({
                     properties: JSON.stringify(properties),
                 });
@@ -287,21 +281,21 @@ export class ClientsService {
             }
         }
         catch (error) {
-            if (error.status === StatusCodes.BAD_REQUEST){
+            if (error.status === StatusCodes.BAD_REQUEST) {
                 throw new BadRequestException();
             }
             throw new InternalServerErrorException()
         }
     }
 
-    async getPhoto(res, filename:string){
+    async getPhoto(res, filename: string) {
         try {
-            return of (res.sendFile(join(process.cwd(), './uploads/' + filename), function(error) {
+            return of(res.sendFile(join(process.cwd(), './uploads/' + filename), function (error) {
                 if (error) {
                     res.status(StatusCodes.NOT_FOUND)
                     res.send({
                         status: error.statusCode,
-                        send:   getReasonPhrase(error.statusCode),
+                        send: getReasonPhrase(error.statusCode),
                     })
                 }
             }));

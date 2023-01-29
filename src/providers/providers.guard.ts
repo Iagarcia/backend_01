@@ -1,4 +1,4 @@
-import {Injectable, CanActivate, ExecutionContext} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import * as jose from 'jose';
 
@@ -8,88 +8,57 @@ export class AuthGuard implements CanActivate {
         context: ExecutionContext,
     ): boolean | Promise<boolean> | Observable<boolean> {
         const request = context.switchToHttp().getRequest();
-        return validateRequest(request);
+        return validateAuth(request);
     }
 }
 
-async function validateRequest(request){
+async function validateAuth(request: Request) {
     try {
         const jwt = request.headers['authorization'].split(" ")[1];
         if (!jwt) {
-            return(false);
+            return (false);
         }
         const secret = await new TextEncoder().encode(
             "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
         );
         const { payload } = await jose.jwtVerify(jwt, secret);
-        if (payload.id  && payload.type === "provider"){
-            return(true);
+        if (payload.id) {
+            return (true);
         }
-        return(false);
+        return (false);
     }
     catch (e) {
-        return(false)
-    }
-}
-
-
-@Injectable()
-export class AgainGuard implements CanActivate {
-    canActivate(
-        context: ExecutionContext,
-    ): boolean | Promise<boolean> | Observable<boolean> {
-        const request = context.switchToHttp().getRequest();
-        return againRequest(request);
-    }
-}
-
-async function againRequest(request){
-    try {
-        const jwt = request.headers['authorization'].split(" ")[1];
-        const body = request.body;
-        if (!jwt) {
-            return(false);
-        }
-        const secret = await new TextEncoder().encode(
-            "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
-        );
-        const { payload  } = await jose.compactVerify(jwt, secret);
-        const expiredData = JSON.parse(payload.toString());
-        if (expiredData.email === body.email){
-            return(true)
-        }
-        return(false);
-    }
-    catch (e) {
-        return(false)
+        return (false)
     }
 }
 
 @Injectable()
-export class ClientGuard implements CanActivate {
+export class ProviderGuard implements CanActivate {
     canActivate(
         context: ExecutionContext,
     ): boolean | Promise<boolean> | Observable<boolean> {
         const request = context.switchToHttp().getRequest();
-        return validateClient(request);
+        return validateProvider(request);
     }
 }
 
-async function validateClient(request){
+async function validateProvider(request: Request) {
     try {
         const jwt = request.headers['authorization'].split(" ")[1];
         if (!jwt) {
-            return false;
+            return (false);
         }
         const secret = await new TextEncoder().encode(
             "Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP"
         );
         const { payload } = await jose.jwtVerify(jwt, secret);
-        return payload.id && payload.type === "client";
-
+        if (payload.id && payload.type === "provider") {
+            return (true);
+        }
+        return (false);
     }
     catch (e) {
-        return false
+        return (false)
     }
 }
 
