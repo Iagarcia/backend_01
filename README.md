@@ -4,7 +4,14 @@ This backend provides an API for manipulating a database that represents the pro
 
 ![database](documentation/database.svg)
 
-## Features
+## Models
+
+A model is built for manage a database table in `object.model.ts`, to handle model-like objects are implemented:
+  - `objects.module.ts`
+  - `objects.controller.ts`
+  - `objects.service.ts`
+  - `objects.guard.ts`
+  - `objects.filter.ts`
 
 ### Provider/Client
 ### Item
@@ -13,7 +20,7 @@ This backend provides an API for manipulating a database that represents the pro
 
 ## Configuration
 
-### Database
 ### Network
-
-## Deployment
+### Database
+### Documentation
+### Jason Web Token
