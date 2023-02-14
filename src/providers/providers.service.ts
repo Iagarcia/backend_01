@@ -6,9 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { CreateProviderDto } from './dto/create-provider.dto';
 import { AuthenticateProviderDto } from "./dto/authenticate-provider.dto";
 import { RecoverProviderDto } from "./dto/recover-provider.dto";
-import { UpdateProviderPersonalDataDto } from "./dto/update-personal-data.dto";
-import { UpdateProviderContactDataDto } from "./dto/update-contact-data.dto";
-import { UpdateProviderPropertiesDto } from "./dto/update-properties.dto";
+import { UpdateProviderDto } from './dto/update-provider.dto';
 
 import { Provider } from './models/provider.model';
 import * as bcrypt from 'bcrypt';
@@ -176,8 +174,11 @@ export class ProvidersService {
         }
     }
 
-    async updatePersonalData(headers: Headers, personalDataDto: UpdateProviderPersonalDataDto) {
+    async update(headers: Headers, accountDto: UpdateProviderDto) {
         try {
+            const salt = await bcrypt.genSalt();
+            const password = accountDto.password;
+            const hash = password ? await bcrypt.hash(password, salt) : undefined;
             const jwt = headers['authorization'].split(" ")[1];
             const jwtKey = this.configService.get<string>('jwt.key');
             const secret = new TextEncoder().encode(jwtKey);
@@ -186,10 +187,16 @@ export class ProvidersService {
                 where: { id: payload.id },
             });
             await provider.update({
-                name: personalDataDto.name.toUpperCase(),
-                tin: personalDataDto.tin,
-                nationality: personalDataDto.nationality,
-                birthday: personalDataDto.birthday,
+                name: accountDto.name ? accountDto.name.toUpperCase() : payload.name,
+                tin: accountDto.tin,
+                nationality: accountDto.nationality,
+                birthday: accountDto.birthday,
+                email: accountDto.email ? accountDto.email : payload.email,
+                phone: accountDto.phone ? accountDto.phone : payload.phone,
+                address: accountDto.address,
+                password: hash===undefined ? payload.password : hash,
+                properties: accountDto.properties,
+                isActive: accountDto.isActive
             })
             await provider.save();
             return ({
@@ -198,54 +205,7 @@ export class ProvidersService {
             })
         }
         catch (error) {
-            throw new InternalServerErrorException()
-        }
-    }
-
-    async updateContactData(headers: Headers, contactDataDto: UpdateProviderContactDataDto) {
-        try {
-            const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey = this.configService.get<string>('jwt.key');
-            const secret = new TextEncoder().encode(jwtKey);
-            const { payload } = await jose.jwtVerify(jwt, secret);
-            const provider = await this.providerModel.findOne({
-                where: { id: payload.id },
-            });
-            await provider.update({
-                email: contactDataDto.email,
-                phone: contactDataDto.phone,
-                address: contactDataDto.address,
-            })
-            await provider.save();
-            return ({
-                status: StatusCodes.OK,
-                send: ReasonPhrases.OK,
-            })
-        }
-        catch (error) {
-            throw new InternalServerErrorException()
-        }
-    }
-
-    async updatePropertiesData(headers: Headers, propertiesDataDto: UpdateProviderPropertiesDto) {
-        try {
-            const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey = this.configService.get<string>('jwt.key');
-            const secret = new TextEncoder().encode(jwtKey);
-            const { payload } = await jose.jwtVerify(jwt, secret);
-            const provider = await this.providerModel.findOne({
-                where: { id: payload.id },
-            });
-            await provider.update({
-                properties: propertiesDataDto.properties,
-            })
-            await provider.save();
-            return ({
-                status: StatusCodes.OK,
-                send: ReasonPhrases.OK,
-            })
-        }
-        catch (error) {
+            console.log(error)
             throw new InternalServerErrorException()
         }
     }

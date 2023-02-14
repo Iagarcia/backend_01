@@ -1,44 +1,44 @@
-import { Injectable, InternalServerErrorException, } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ConfigService } from '@nestjs/config';
 
-import { CreateItemDto } from './dto/create-item.dto';
-import { UpdateItemDto } from './dto/update-item.dto';
-import { UpdateItemPhotosDto } from './dto/update-item-photos.dto';
-import { DeleteItemDto } from './dto/delete-item.dto';
+import { CreateRequestDto } from './dto/create-request.dto';
+import { UpdateRequestDto } from './dto/update-request.dto';
+import { UpdateRequestPhotosDto } from './dto/update-request-photos.dto';
+import { DeleteRequestDto } from './dto/delete-request.dto';
 
-import { Item } from './models/item.model';
+import { Request } from './models/request.model';
 import * as jose from 'jose';
 import { join } from 'path';
 import { of } from "rxjs";
 import { getReasonPhrase, ReasonPhrases, StatusCodes } from "http-status-codes";
 
 @Injectable()
-export class ItemsService {
+export class RequestsService {
     constructor(
         private configService: ConfigService,
-        @InjectModel(Item)
-        private readonly itemModel: typeof Item,
+        @InjectModel(Request)
+        private readonly requestModel: typeof Request,
     ) {}
 
-async create(itemDto: CreateItemDto, headers: Headers) {
+async create(requestDto: CreateRequestDto, headers: Headers) {
     try {
         const jwt = headers['authorization'].split(" ")[1];
         const jwtKey = this.configService.get<string>('jwt.key');
         const secret = new TextEncoder().encode(jwtKey);
         const { payload } = await jose.jwtVerify(jwt, secret);
-        const item = await this.itemModel.create({
-            title: itemDto.title,
-            description: itemDto.description,
-            currency: itemDto.currency,
-            unitCost: itemDto.unitCost,
-            properties: itemDto.properties ? itemDto.properties : {},
-            providerId: payload.id,
+        const request = await this.requestModel.create({
+            place: requestDto.place,
+            date: requestDto.date,
+            paymentMethod: requestDto.paymentMethod,
+            amount: requestDto.amount,
+            properties: requestDto.properties ? requestDto.properties : {},
+            clientId: payload.id
         })
         return ({
             status: StatusCodes.CREATED,
             send: ReasonPhrases.CREATED,
-            data: item
+            data: request
         })
     }
     catch (error) {
@@ -52,13 +52,13 @@ async getData(headers: Headers) {
         const jwtKey = this.configService.get<string>('jwt.key');
         const secret = new TextEncoder().encode(jwtKey);
         const { payload } = await jose.jwtVerify(jwt, secret);
-        const items = await this.itemModel.findAll({
-            where: {providerId: payload.id}
+        const contracts = await this.requestModel.findAll({
+            where: {clientId: payload.id}
         })
         return ({
             status: StatusCodes.OK,
             send: ReasonPhrases.OK,
-            data: items
+            data: contracts
         })
 
     }
@@ -67,19 +67,19 @@ async getData(headers: Headers) {
     }
 }
 
-async updateData(itemDto: UpdateItemDto) {
+async updateData(requestDto: UpdateRequestDto) {
     try {
-        const item = await this.itemModel.findOne({
-            where: {id: itemDto.id}
+        const request = await this.requestModel.findOne({
+            where: {id: requestDto.id}
         });
-        await item.update({
-            title: itemDto.title,
-            description: itemDto.description,
-            currency: itemDto.currency,
-            unitCost: itemDto.unitCost,
-            properties: itemDto.properties,
+        await request.update({
+            place: requestDto.place,
+            date: requestDto.date,
+            paymentMethod: requestDto.paymentMethod,
+            amount: requestDto.amount,
+            properties: requestDto.properties,
         })
-        await item.save();
+        await request.save();
         return ({
             status: StatusCodes.OK,
             send: ReasonPhrases.OK,
@@ -90,18 +90,18 @@ async updateData(itemDto: UpdateItemDto) {
     }
 }
 
-async updatePhotos(photosDto:UpdateItemPhotosDto, headers, files:any[]){
+async updatePhotos(photosDto:UpdateRequestPhotosDto, headers, files:any[]){
     try {
         const jwt = headers['authorization'].split(" ")[1];
         const jwtKey = this.configService.get<string>('jwt.key');
         const secret = new TextEncoder().encode(jwtKey);
         const { payload } = await jose.jwtVerify(jwt, secret);
-        const items = await this.itemModel.findAll({
-            where: {providerId: payload.id}
+        const requests = await this.requestModel.findAll({
+            where: {clientId: payload.id}
         })
-        const itemsId = items.map(item => {return item.id})
+        const requestsId = requests.map(request => {return request.id})
         const id = Number(photosDto.id);
-        if (!itemsId.includes(id)){
+        if (!requestsId.includes(id)){
             return ({
                 status: StatusCodes.FORBIDDEN,
                 send: ReasonPhrases.FORBIDDEN,
@@ -113,11 +113,11 @@ async updatePhotos(photosDto:UpdateItemPhotosDto, headers, files:any[]){
                 if(file.mimetype.split('/')[0]==='image'){
                     if(file.size < 10000000){
                         const fs = require("fs");
-                        const path = './uploads/item_'+id+'_'+file.originalname;
+                        const path = './uploads/request_'+id+'_'+file.originalname;
                         fs.writeFile(path, file.buffer, (err) => {
                             if (err) throw err;
                         });
-                        filesUploaded.push('item_'+id+'_'+file.originalname)
+                        filesUploaded.push('request_'+id+'_'+file.originalname)
                     }
                     else {
                         return ({
@@ -131,15 +131,15 @@ async updatePhotos(photosDto:UpdateItemPhotosDto, headers, files:any[]){
                     })
                 }
             })
-            const item = await this.itemModel.findOne({
+            const request = await this.requestModel.findOne({
                 where: {id: id}
             });
-            const properties = item.properties;
+            const properties = request.properties;
             properties["photos"] = filesUploaded;
-            await item.update({
+            await request.update({
                 properties: JSON.stringify(properties),
             })
-            await item.save();
+            await request.save();
             return ({
                 status: StatusCodes.OK,
                 send: ReasonPhrases.OK,
@@ -178,17 +178,17 @@ async getPhoto(res: any, filename: string) {
     }
 }
 
-async delete(deleteServiceDto:DeleteItemDto){
+async delete(deleteServiceDto:DeleteRequestDto){
     try {
-        const item = await this.itemModel.findOne({
+        const request = await this.requestModel.findOne({
             where: {id: deleteServiceDto.id}
         })
-        await item.destroy();
+        await request.destroy();
         return ({
             status: StatusCodes.GONE,
             send: ReasonPhrases.GONE,
             data: {
-                message: "Item deleted",
+                message: "Request deleted",
             }
         })
     }

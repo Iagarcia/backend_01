@@ -7,21 +7,19 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateClientDto } from './dto/create-client.dto';
 import { AuthenticateClientDto } from "./dto/authenticate-client.dto";
 import { RecoverClientDto } from "./dto/recover-client.dto";
-import { UpdateClientPersonalDataDto } from "./dto/update-personal-data.dto";
-import { UpdateClientContactDataDto } from "./dto/update-contact-data.dto";
-import { UpdateClientPropertiesDataDto } from "./dto/update-properties.dto";
-import { UpdateClientPhotoDto } from "./dto/update-photo.dto";
+import { UpdateClientDto } from './dto/update-client.dto';
+import { UpdateClientPhotoDto } from "./dto/update-client-photo.dto";
 
 import { ClientsService } from './clients.service';
 import { HttpExceptionFilter } from './clients.filter';
 import { AuthGuard, ClientGuard } from "./clients.guard";
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 
-@Controller('/clients')
+@Controller('clients')
 export class ClientsController {
     constructor(private readonly clientsService: ClientsService) { }
 
-    @Post('/create')
+    @Post('create')
     @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
     @ApiResponse({ status: StatusCodes.CREATED, description: ReasonPhrases.CREATED })
@@ -32,7 +30,7 @@ export class ClientsController {
         return this.clientsService.create(createClientDto);
     }
 
-    @Post('/authenticate')
+    @Post('authenticate')
     @HttpCode(200)
     @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
@@ -45,7 +43,7 @@ export class ClientsController {
         return this.clientsService.authenticate(authenticateClientDto);
     }
 
-    @Put('/recover')
+    @Put('recover')
     @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
     @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK })
@@ -55,7 +53,7 @@ export class ClientsController {
         return this.clientsService.recover(recoverDto);
     }
 
-    @Get('/getData')
+    @Get('getData')
     @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
     @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK })
@@ -64,46 +62,21 @@ export class ClientsController {
     @ApiBearerAuth('JWT-auth')
     @UseGuards(AuthGuard)
     requestData(@Headers() headers) {
-        return this.clientsService.requestData(headers);
+        return this.clientsService.getData(headers);
     }
 
-    @Put('/updatePersonalData')
+    @Put('update')
     @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
+    @ApiBearerAuth('JWT-auth')
     @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK })
     @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN })
     @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(ClientGuard)
-    updatePersonalData(@Headers() headers, @Body() personalDataDto: UpdateClientPersonalDataDto) {
-        return this.clientsService.updatePersonalData(headers, personalDataDto);
+    update(@Headers() headers: Headers, @Body() accountDto: UpdateClientDto) {
+        return this.clientsService.update(headers, accountDto);
     }
 
-    @Put('/updateContactData')
-    @UseFilters(new HttpExceptionFilter())
-    @ApiTags('Clients Endpoints')
-    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK })
-    @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN })
-    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(ClientGuard)
-    updateContactData(@Headers() headers, @Body() contactDataDto: UpdateClientContactDataDto) {
-        return this.clientsService.updateContactData(headers, contactDataDto);
-    }
-
-    @Put('/updateProperties')
-    @UseFilters(new HttpExceptionFilter())
-    @ApiTags('Clients Endpoints')
-    @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK })
-    @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN })
-    @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR })
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(ClientGuard)
-    updatePropertiesData(@Headers() headers, @Body() propertiesDataDto: UpdateClientPropertiesDataDto) {
-        return this.clientsService.updatePropertiesData(headers, propertiesDataDto);
-    }
-
-    @Put('/updatePhoto')
+    @Put('updatePhoto')
     @UseFilters(new HttpExceptionFilter())
     @ApiConsumes('multipart/form-data')
     @ApiTags('Clients Endpoints')
@@ -120,7 +93,7 @@ export class ClientsController {
         return this.clientsService.updatePhoto(headers, file);
     }
 
-    @Get('/getPhoto/:filename')
+    @Get('getPhoto/:filename')
     @UseFilters(new HttpExceptionFilter())
     @ApiTags('Clients Endpoints')
     @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK })

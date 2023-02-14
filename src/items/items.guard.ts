@@ -2,7 +2,6 @@ import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ConfigService } from '@nestjs/config';
 
-
 import { Item } from './models/item.model';
 import { Observable } from 'rxjs';
 import * as jose from 'jose';
@@ -35,7 +34,6 @@ async function validateAuth(request: Request, key: string) {
         return (false);
     }
     catch (e) {
-        console.log(e)
         return (false)
     }
 }
@@ -83,7 +81,6 @@ export class OwnGuard implements CanActivate {
         const request = context.switchToHttp().getRequest();
         const key = this.configService.get<string>('jwt.key');
         const body = request.body;
-        console.log("BODY", body)
         return validateOwn(request, key, this.itemModel, body);
     }
 }
@@ -106,7 +103,6 @@ async function validateOwn(request: Request, key: string, itemModel: typeof Item
         return (false)
     }
     catch (e) {
-        console.log(e)
         return (false)
     }
 }

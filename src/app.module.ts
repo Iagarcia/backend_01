@@ -9,10 +9,12 @@ import configuration from './app.config';
 import { ProvidersModule } from './providers/providers.module';
 import { ClientsModule } from './clients/clients.module';
 import { ItemsModule } from './items/items.module';
+import { RequestsModule } from './requests/requests.module';
 
 import { Provider } from './providers/models/provider.model';
 import { Client } from './clients/models/client.model';
 import { Item } from './items/models/item.model';
+import { Request } from './requests/models/request.model'
 
 @Module({
   imports: [
@@ -28,7 +30,7 @@ import { Item } from './items/models/item.model';
         username: configService.get('db.username'),
         password: configService.get('db.password'),
         database: configService.get('db.database'),
-        models: [Provider, Item, Client],
+        models: [Provider, Item, Client, Request],
         autoLoadModels: true,
         synchronize: true,
       }),
@@ -37,6 +39,7 @@ import { Item } from './items/models/item.model';
     ProvidersModule,
     ClientsModule,
     ItemsModule,
+    RequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

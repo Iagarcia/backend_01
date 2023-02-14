@@ -14,6 +14,6 @@ export class CreateItemDto {
     @IsNotEmpty()
     @ApiProperty({ example: '2.45', description: 'Price by unit', required: true })
     unitCost: number;
-    @ApiProperty({ example: '{"ingredients": ["Cheese", "Bacon"]}', description: 'Particular properties' })
+    @ApiProperty({ example: '{"ingredients": ["Cheese", "Bacon"]}', description: 'Particular properties', required: false  })
     properties: string;
 }

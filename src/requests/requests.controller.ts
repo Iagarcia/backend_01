@@ -4,94 +4,95 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { Body, Headers, Param, Res } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiResponse, ApiConsumes } from '@nestjs/swagger';
 
-import { CreateItemDto } from './dto/create-item.dto';
-import { UpdateItemDto } from './dto/update-item.dto';
-import { UpdateItemPhotosDto } from './dto/update-item-photos.dto';
-import { DeleteItemDto } from './dto/delete-item.dto';
+import { CreateRequestDto } from './dto/create-request.dto';
+import { UpdateRequestDto } from './dto/update-request.dto';
+import { UpdateRequestPhotosDto } from './dto/update-request-photos.dto';
+import { DeleteRequestDto } from './dto/delete-request.dto';
 
-import { ItemsService } from './items.service';
-import { HttpExceptionFilter } from './items.filter';
-import { AuthGuard, OwnGuard, ProviderGuard } from './items.guard';
+import { RequestsService } from './requests.service';
+import { HttpExceptionFilter } from './requests.filter';
+import { ClientGuard, OwnGuard, AuthGuard } from './requests.guard';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import { of } from "rxjs";
 import { join } from "path";
 
-@Controller('items')
-export class ItemsController {
-    constructor(private readonly itemService: ItemsService) {}
+@Controller('requests')
+export class RequestsController {
+    constructor(private readonly requestsService: RequestsService) {}
 
     @Post('create')
-    @UseGuards(ProviderGuard)
+    @UseGuards(ClientGuard)
     @UseFilters(new HttpExceptionFilter())
-    @ApiTags('Items Endpoints')
+    @ApiTags('Requests Endpoints')
     @ApiBearerAuth('JWT-auth')
     @ApiResponse({ status: StatusCodes.CREATED, description: ReasonPhrases.CREATED })
     @ApiResponse({ status: StatusCodes.BAD_REQUEST, description: ReasonPhrases.BAD_REQUEST })
     @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN })
     @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR })
-    create(@Body() itemDto: CreateItemDto, @Headers() headers: Headers) {
-        return this.itemService.create(itemDto, headers);
+    
+    create(@Body() requestDto: CreateRequestDto,  @Headers() headers: Headers){
+        return this.requestsService.create(requestDto, headers);
     }
 
     @Get('getData')
-    @UseGuards(ProviderGuard)
+    @UseGuards(ClientGuard)
     @UseFilters(new HttpExceptionFilter())
-    @ApiTags('Items Endpoints')
+    @ApiTags('Requests Endpoints')
     @ApiBearerAuth('JWT-auth')
     @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK })
     @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN })
     @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR })
     getData(@Headers() headers: Headers) {
-        return this.itemService.getData(headers);
+        return this.requestsService.getData(headers);
     }
 
     @Put('updateData')
     @UseGuards(OwnGuard)
     @UseFilters(new HttpExceptionFilter())
-    @ApiTags('Items Endpoints')
+    @ApiTags('Requests Endpoints')
     @ApiBearerAuth('JWT-auth')
     @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK })
     @ApiResponse({ status: StatusCodes.BAD_REQUEST, description: ReasonPhrases.BAD_REQUEST })
     @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN })
     @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR })
-    updateData(@Body() itemDto: UpdateItemDto) {
-        return this.itemService.updateData(itemDto);
+    updateData(@Body() requestDto: UpdateRequestDto) {
+        return this.requestsService.updateData(requestDto);
     }
 
     @Put('/updatePhotos')
-    @UseGuards(ProviderGuard)
+    @UseGuards(ClientGuard)
     @ApiConsumes('multipart/form-data')
-    @ApiTags('Items Endpoints')
+    @ApiTags('Requests Endpoints')
     @ApiBearerAuth('JWT-auth')
     @UseInterceptors(FilesInterceptor('files'))
-    updateServicePhotos(@Body() photosDto: UpdateItemPhotosDto,
+    updateServicePhotos(@Body() photosDto: UpdateRequestPhotosDto,
                         @Headers() headers,
                         @UploadedFiles() files: Array<Express.Multer.File>){
-        return this.itemService.updatePhotos(photosDto, headers, files)
+        return this.requestsService.updatePhotos(photosDto, headers, files)
     }
 
     @Get('/getPhoto/:filename')
     @UseGuards(AuthGuard)
-    @ApiTags('Items Endpoints')
+    @ApiTags('Requests Endpoints')
     @ApiBearerAuth('JWT-auth')
     @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK })
     @ApiResponse({ status: StatusCodes.BAD_REQUEST, description: ReasonPhrases.BAD_REQUEST })
     @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN })
     @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR })
     getPhoto(@Param('filename') filename: string, @Res() res){
-        return this.itemService.getPhoto(res, filename);
+        return this.requestsService.getPhoto(res, filename);
     }
 
     @Delete('/deleteService')
     @UseGuards(OwnGuard)
-    @ApiTags('Items Endpoints')
+    @ApiTags('Requests Endpoints')
     @ApiBearerAuth('JWT-auth')
     @ApiResponse({ status: StatusCodes.GONE, description: ReasonPhrases.GONE })
     @ApiResponse({ status: StatusCodes.BAD_REQUEST, description: ReasonPhrases.BAD_REQUEST })
     @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN })
     @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR })
-    delete(@Body() deleteServiceDto:DeleteItemDto){
-        return this.itemService.delete(deleteServiceDto)
+    delete(@Body() deleteServiceDto:DeleteRequestDto){
+        return this.requestsService.delete(deleteServiceDto)
     }
 
 }
