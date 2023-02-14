@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class UpdateServicePhotosDto {
-    @ApiProperty({ example: 1, description: 'The service identification' })
+export class UpdateItemPhotosDto {
+    @ApiProperty({ example: 1, description: 'The item identification', required: true })
     id: number;
 
     @ApiProperty({

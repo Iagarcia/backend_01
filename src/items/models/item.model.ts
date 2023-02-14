@@ -1,9 +1,9 @@
 import { DataType, Column, Model, Table, ForeignKey, BelongsTo, AllowNull, HasMany} from 'sequelize-typescript';
 import { Provider } from '../../providers/models/provider.model';
-import { Schedule } from '../../schedules/models/schedule.model';
+//import { Schedule } from '../../schedules/models/schedule.model';
 
 @Table
-export class Service extends Model {
+export class Item extends Model {
     //GENERAL DATA
     @AllowNull(false)
     @Column
@@ -34,7 +34,8 @@ export class Service extends Model {
 
     @BelongsTo(() => Provider)
     provider: Provider
-
+/*
     @HasMany(() => Schedule)
     schedules: Schedule[]
+*/
 }

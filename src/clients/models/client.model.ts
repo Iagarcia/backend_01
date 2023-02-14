@@ -1,5 +1,5 @@
 import { Column, Model, Table, HasMany, Unique, AllowNull } from 'sequelize-typescript';
-import { Contract } from '../../contracts/models/contract.model';
+//import { Contract } from '../../contracts/models/contract.model';
 
 @Table
 export class Client extends Model {
@@ -43,7 +43,8 @@ export class Client extends Model {
 
     @Column({ defaultValue: true })
     isActive: boolean;
-
+/*
     @HasMany(() => Contract)
     contracts: Contract[]
+*/
 }

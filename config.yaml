@@ -1,11 +1,12 @@
 http:
     port: 3000
+    
 db:
     host: 'localhost'
     port: 5432
-    username: 'vidat'
-    password: 'v1d4t'
-    database: 'vidat'
+    username: 'backend_01_user'
+    password: 'backend_01_pwd'
+    database: 'backend_01_db'
 
 doc:
     path: '/api'
@@ -23,6 +24,6 @@ doc:
         reference: 'JWT-auth'
 
 jwt:
-    key: 'Swe4g7c?UBm5Nrd96vhsVDtkyJFbqKMTm!TMw5BDRLtaCFAXNvbq?s4rGKQSZnUP'
+    key: 'backend_01_jwtkey'
     alg: 'HS256'
     exp: '2h'

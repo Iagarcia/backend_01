@@ -16,7 +16,6 @@ import { ProvidersService } from './providers.service';
 import { HttpExceptionFilter } from "./providers.filter";
 import { AuthGuard, ProviderGuard } from "./providers.guard";
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
-import { Response } from 'express';
 
 @Controller('/providers')
 export class ProvidersController {
@@ -64,8 +63,8 @@ export class ProvidersController {
     @ApiResponse({ status: StatusCodes.INTERNAL_SERVER_ERROR, description: ReasonPhrases.INTERNAL_SERVER_ERROR })
     @ApiBearerAuth('JWT-auth')
     @UseGuards(AuthGuard)
-    requestData(@Headers() headers) {
-        return this.providersService.requestData(headers);
+    getData(@Headers() headers) {
+        return this.providersService.getData(headers);
     }
 
     @Put('/updatePersonalData')
@@ -126,7 +125,7 @@ export class ProvidersController {
     @ApiTags('Providers Endpoints')
     @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK })
     @ApiResponse({ status: StatusCodes.NOT_FOUND, description: ReasonPhrases.NOT_FOUND })
-    getPhoto(@Param('filename') filename: string, @Res() res) {
+    getPhoto(@Param('filename') filename: string, @Res() res: any) {
         return this.providersService.getPhoto(res, filename);
     }
 }

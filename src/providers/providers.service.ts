@@ -1,4 +1,4 @@
-import { BadRequestException, HttpExceptionOptions, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { UnauthorizedException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ConfigService } from '@nestjs/config';
@@ -145,7 +145,7 @@ export class ProvidersService {
         }
     }
 
-    async requestData(headers: Headers) {
+    async getData(headers: Headers) {
         try {
             const jwt = headers['authorization'].split(" ")[1];
             const jwtKey = this.configService.get<string>('jwt.key');
@@ -288,7 +288,7 @@ export class ProvidersService {
         }
     }
 
-    async getPhoto(res, filename: string) {
+    async getPhoto(res: any, filename: string) {
         try {
             return of(res.sendFile(join(process.cwd(), './uploads/' + filename), function (error) {
                 if (error) {
