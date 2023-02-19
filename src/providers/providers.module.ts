@@ -8,7 +8,6 @@ import { ProvidersService } from "./providers.service";
 @Module({
     imports: [ConfigModule, SequelizeModule.forFeature([Provider])],
     controllers:[ProvidersController],
-    providers:[ProvidersService],
-    exports:[ProvidersService]
+    providers:[ProvidersService]
 })
 export class ProvidersModule {}

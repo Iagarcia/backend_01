@@ -1,5 +1,5 @@
 import { Column, Model, Table, HasMany, Unique, AllowNull } from 'sequelize-typescript';
-import { Service } from '../../services/models/service.model';
+import { Item } from '../../items/models/item.model';
 
 @Table
 export class Provider extends Model {
@@ -44,6 +44,7 @@ export class Provider extends Model {
     @Column({ defaultValue: true })
     isActive: boolean;
 
-    @HasMany(() => Service)
-    services: Service[];
+    @HasMany(() => Item)
+    items: Item[];
+    
 }

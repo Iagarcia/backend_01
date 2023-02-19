@@ -6,9 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { CreateClientDto } from './dto/create-client.dto';
 import { AuthenticateClientDto } from "./dto/authenticate-client.dto";
 import { RecoverClientDto } from "./dto/recover-client.dto";
-import { UpdateClientPersonalDataDto } from "./dto/update-personal-data.dto";
-import { UpdateClientContactDataDto } from "./dto/update-contact-data.dto";
-import { UpdateClientPropertiesDataDto } from "./dto/update-properties.dto";
+import { UpdateClientDto } from './dto/update-client.dto';
 
 import { Client } from './models/client.model';
 import * as bcrypt from "bcrypt";
@@ -145,7 +143,7 @@ export class ClientsService {
         }
     }
 
-    async requestData(headers: Headers) {
+    async getData(headers: Headers) {
         try {
             const jwt = headers['authorization'].split(" ")[1];
             const jwtKey = this.configService.get<string>('jwt.key');
@@ -176,8 +174,11 @@ export class ClientsService {
         }
     }
 
-    async updatePersonalData(headers: Headers, personalDataDto: UpdateClientPersonalDataDto) {
+    async update(headers: Headers, accountDto: UpdateClientDto) {
         try {
+            const salt = await bcrypt.genSalt();
+            const password = accountDto.password;
+            const hash = password ? await bcrypt.hash(password, salt) : undefined;
             const jwt = headers['authorization'].split(" ")[1];
             const jwtKey = this.configService.get<string>('jwt.key');
             const secret = new TextEncoder().encode(jwtKey);
@@ -186,10 +187,16 @@ export class ClientsService {
                 where: { id: payload.id },
             });
             await client.update({
-                name: personalDataDto.name,
-                tin: personalDataDto.tin,
-                nationality: personalDataDto.nationality,
-                birthday: personalDataDto.birthday,
+                name: accountDto.name ? accountDto.name.toUpperCase() : payload.name,
+                tin: accountDto.tin,
+                nationality: accountDto.nationality,
+                birthday: accountDto.birthday,
+                email: accountDto.email ? accountDto.email : payload.email,
+                phone: accountDto.phone ? accountDto.phone : payload.phone,
+                address: accountDto.address,
+                password: hash===undefined ? payload.password : hash,
+                properties: accountDto.properties,
+                isActive: accountDto.isActive
             })
             await client.save();
             return ({
@@ -198,54 +205,7 @@ export class ClientsService {
             })
         }
         catch (error) {
-            throw new InternalServerErrorException()
-        }
-    }
-
-    async updateContactData(headers: Headers, contactDataDto: UpdateClientContactDataDto) {
-        try {
-            const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey = this.configService.get<string>('jwt.key');
-            const secret = new TextEncoder().encode(jwtKey);
-            const { payload } = await jose.jwtVerify(jwt, secret);
-            const client = await this.clientModel.findOne({
-                where: { id: payload.id },
-            });
-            await client.update({
-                email: contactDataDto.email,
-                phone: contactDataDto.phone,
-                address: contactDataDto.address,
-            })
-            await client.save();
-            return ({
-                status: StatusCodes.OK,
-                send: ReasonPhrases.OK,
-            })
-        }
-        catch (error) {
-            throw new InternalServerErrorException()
-        }
-    }
-
-    async updatePropertiesData(headers: Headers, propertiesDataDto: UpdateClientPropertiesDataDto) {
-        try {
-            const jwt = headers['authorization'].split(" ")[1];
-            const jwtKey = this.configService.get<string>('jwt.key');
-            const secret = new TextEncoder().encode(jwtKey);
-            const { payload } = await jose.jwtVerify(jwt, secret);
-            const client = await this.clientModel.findOne({
-                where: { id: payload.id },
-            });
-            await client.update({
-                properties: propertiesDataDto.properties,
-            })
-            await client.save();
-            return ({
-                status: StatusCodes.OK,
-                send: ReasonPhrases.OK,
-            })
-        }
-        catch (error) {
+            console.log(error)
             throw new InternalServerErrorException()
         }
     }
