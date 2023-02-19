@@ -1,6 +1,6 @@
 import {DataType, Column, Model, Table, BelongsTo, ForeignKey, AllowNull, HasMany} from 'sequelize-typescript';
-import { Client }  from '../../clients/models/client.model';
-//import { Schedule } from "../../schedules/models/schedule.model";
+import { Client } from 'src/clients/models/client.model';
+import { Delivery } from 'src/deliveries/models/delivery.model';
 
 @Table
 export class Request extends Model {
@@ -34,8 +34,8 @@ export class Request extends Model {
 
     @BelongsTo(() => Client)
     client: Client
-/*
-    @HasMany(() => Schedule)
-    schedules: Schedule[]
-*/
+
+    @HasMany(() => Delivery)
+    deliveries: Delivery[]
+
 }

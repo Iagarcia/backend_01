@@ -13,8 +13,6 @@ import { ItemsService } from './items.service';
 import { HttpExceptionFilter } from './items.filter';
 import { AuthGuard, OwnGuard, ProviderGuard } from './items.guard';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
-import { of } from "rxjs";
-import { join } from "path";
 
 @Controller('items')
 export class ItemsController {

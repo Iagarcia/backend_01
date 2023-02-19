@@ -1,6 +1,6 @@
 import { DataType, Column, Model, Table, ForeignKey, BelongsTo, AllowNull, HasMany} from 'sequelize-typescript';
-import { Provider } from '../../providers/models/provider.model';
-//import { Schedule } from '../../schedules/models/schedule.model';
+import { Provider } from 'src/providers/models/provider.model';
+import { Delivery } from 'src/deliveries/models/delivery.model';
 
 @Table
 export class Item extends Model {
@@ -34,8 +34,8 @@ export class Item extends Model {
 
     @BelongsTo(() => Provider)
     provider: Provider
-/*
-    @HasMany(() => Schedule)
-    schedules: Schedule[]
-*/
+
+    @HasMany(() => Delivery)
+    deliveries: Delivery[]
+
 }
