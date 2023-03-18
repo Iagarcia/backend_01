@@ -30,7 +30,7 @@ jwt:
 
 files:
     images:
-        providers: '/home/iagarcia/Projects/Iagarcia/backend_01/uploads/'
-        items: '/home/iagarcia/Projects/Iagarcia/backend_01/uploads/'
-        requests: '/home/iagarcia/Projects/Iagarcia/backend_01/uploads/'
-        clients: '/home/iagarcia/Projects/Iagarcia/backend_01/uploads/'
+        providers: '/home/iagarcia/backend_01/uploads/'
+        items: '/home/iagarcia/backend_01/uploads/'
+        requests: '/home/iagarcia/backend_01/uploads/'
+        clients: '/home/iagarcia/backend_01/uploads/'
