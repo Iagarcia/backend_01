@@ -113,7 +113,8 @@ async updatePhotos(photosDto:UpdateRequestPhotosDto, headers, files:any[]){
                 if(file.mimetype.split('/')[0]==='image'){
                     if(file.size < 10000000){
                         const fs = require("fs");
-                        const path = './uploads/request_'+id+'_'+file.originalname;
+                        const location = this.configService.get<string>('files.images.requests');
+                        const path = location + 'request_'+id+'_'+file.originalname;
                         fs.writeFile(path, file.buffer, (err) => {
                             if (err) throw err;
                         });
@@ -163,7 +164,8 @@ async updatePhotos(photosDto:UpdateRequestPhotosDto, headers, files:any[]){
 
 async getPhoto(res: any, filename: string) {
     try {
-        return of(res.sendFile(join(process.cwd(), './uploads/' + filename), function (error) {
+        const location = this.configService.get<string>('files.images.requests');
+        return of(res.sendFile(location + filename, function (error) {
             if (error) {
                 res.status(StatusCodes.NOT_FOUND)
                 res.send({

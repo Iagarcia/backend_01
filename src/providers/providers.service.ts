@@ -218,7 +218,8 @@ export class ProvidersService {
             const { payload } = await jose.jwtVerify(jwt, secret);
             if (file && file.mimetype.split('/')[0] === 'image' && file.size < 10000000) {
                 const fs = require("fs");
-                const path = './uploads/provider_' + payload.id + '_' + file.originalname;
+                const location = this.configService.get<string>('files.images.providers');
+                const path = location + 'provider_' + payload.id + '_' + file.originalname;
                 fs.writeFile(path, file.buffer, (err) => {
                     if (err) throw err;
                 });
@@ -250,7 +251,8 @@ export class ProvidersService {
 
     async getPhoto(res: any, filename: string) {
         try {
-            return of(res.sendFile(join(process.cwd(), './uploads/' + filename), function (error) {
+            const location = this.configService.get<string>('files.images.providers');
+            return of(res.sendFile(location + filename, function (error) {
                 if (error) {
                     res.status(StatusCodes.NOT_FOUND)
                     res.send({

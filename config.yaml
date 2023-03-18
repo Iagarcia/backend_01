@@ -27,3 +27,10 @@ jwt:
     key: 'backend_01_jwtkey'
     alg: 'HS256'
     exp: '2h'
+
+files:
+    images:
+        providers: '/home/iagarcia/Projects/Iagarcia/backend_01/uploads/'
+        items: '/home/iagarcia/Projects/Iagarcia/backend_01/uploads/'
+        requests: '/home/iagarcia/Projects/Iagarcia/backend_01/uploads/'
+        clients: '/home/iagarcia/Projects/Iagarcia/backend_01/uploads/'
