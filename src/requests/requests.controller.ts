@@ -72,9 +72,7 @@ export class RequestsController {
     }
 
     @Get('/getPhoto/:filename')
-    @UseGuards(AuthGuard)
     @ApiTags('Requests Endpoints')
-    @ApiBearerAuth('JWT-auth')
     @ApiResponse({ status: StatusCodes.OK, description: ReasonPhrases.OK })
     @ApiResponse({ status: StatusCodes.BAD_REQUEST, description: ReasonPhrases.BAD_REQUEST })
     @ApiResponse({ status: StatusCodes.FORBIDDEN, description: ReasonPhrases.FORBIDDEN })
