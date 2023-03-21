@@ -11,6 +11,7 @@ import { ClientsModule } from './clients/clients.module';
 import { ItemsModule } from './items/items.module';
 import { RequestsModule } from './requests/requests.module';
 import { DeliveriesModule } from './deliveries/deliveries.module';
+import { VidatModule } from './vidat/vidat.module';
 
 import { Provider } from './providers/models/provider.model';
 import { Client } from './clients/models/client.model';
@@ -43,6 +44,7 @@ import { Delivery } from './deliveries/models/delivery.model';
     ItemsModule,
     RequestsModule,
     DeliveriesModule,
+    VidatModule,
   ],
   controllers: [AppController],
   providers: [AppService],
