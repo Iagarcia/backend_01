@@ -169,4 +169,21 @@ export class VidatService {
             throw new InternalServerErrorException()
         }
     }
+
+    async requestProvider(id:number) {
+        try {
+            const items = await this.itemModel.findAll({
+                where: {providerId: id},
+                include: ["deliveries"],
+            })
+            return ({
+                status: StatusCodes.OK,
+                send: ReasonPhrases.OK,
+                data: items,
+            })
+        }
+        catch (error) {
+            throw new InternalServerErrorException()
+        }
+    }
 }

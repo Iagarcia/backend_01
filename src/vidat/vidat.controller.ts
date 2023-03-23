@@ -52,4 +52,12 @@ export class VidatController {
     }
 
 
+    @Get('/requestProvider/:id')
+    @ApiTags('Vidat Endpoints')
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(ClientGuard)
+    requestProvider(@Param('id') id: number){
+        return this.vidatService.requestProvider(id);
+    }
+
 }
