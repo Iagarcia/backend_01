@@ -150,4 +150,23 @@ export class VidatService {
             throw new InternalServerErrorException()
         }
     }
+
+    async getItem(id:number){
+        try {
+            const item = await this.itemModel.findOne({
+                where: {id: id},
+                include: ["provider"],
+            })
+            const jsonService = JSON.parse(JSON.stringify(item));
+            delete jsonService.provider.password;
+            return ({
+                status: StatusCodes.OK,
+                send: ReasonPhrases.OK,
+                data: jsonService
+            })
+        }
+        catch (error) {
+            throw new InternalServerErrorException()
+        }
+    }
 }

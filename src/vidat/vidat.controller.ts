@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards, Body, UseFilters, Put, Headers } from '@nestjs/common';
+import { Controller, Post, UseGuards, Body, UseFilters, Put, Get, Param } from '@nestjs/common';
 import { VidatService } from './vidat.service';
 
 import { FilterItemDto } from './dto/filter-item.dto';
@@ -41,6 +41,14 @@ export class VidatController {
     @UseGuards(AgainGuard)
     reauthenticate(@Body() reauthenticateProviderDto: RetriveAccountDto) {
         return this.vidatService.retrieveAccount(reauthenticateProviderDto);
+    }
+
+    @Get('/getItem/:id')
+    @ApiTags('Vidat Endpoints')
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(ClientGuard)
+    getService(@Param('id') id: number){
+        return this.vidatService.getItem(id);
     }
 
 
