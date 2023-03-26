@@ -12,7 +12,7 @@ export class Delivery extends Model {
     @Column({type: 'jsonb'})
     properties: string;
 
-    @AllowNull(false)
+    @AllowNull(true)
     @ForeignKey(() => Item)
     @Column
     itemId: number
@@ -20,7 +20,7 @@ export class Delivery extends Model {
     @BelongsTo(() => Item)
     item: Item
 
-    @AllowNull(false)
+    @AllowNull(true)
     @ForeignKey(() => Request)
     @Column
     requestId: number

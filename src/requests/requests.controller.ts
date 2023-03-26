@@ -81,7 +81,7 @@ export class RequestsController {
         return this.requestsService.getPhoto(res, filename);
     }
 
-    @Delete('/deleteService')
+    @Delete('/delete')
     @UseGuards(OwnGuard)
     @ApiTags('Requests Endpoints')
     @ApiBearerAuth('JWT-auth')

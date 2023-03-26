@@ -34,6 +34,7 @@ export class DeliveriesService {
 
     async create(deliveryDto: CreateDeliveryDto){
         try {
+            console.log("THEDATAIS: ", deliveryDto)
             const delivery = await this.deliveryModel.create({
                 state: deliveryDto.state,
                 properties: deliveryDto.properties,

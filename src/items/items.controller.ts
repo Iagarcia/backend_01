@@ -78,7 +78,7 @@ export class ItemsController {
         return this.itemService.getPhoto(res, filename);
     }
 
-    @Delete('/deleteService')
+    @Delete('/delete')
     @UseGuards(OwnGuard)
     @ApiTags('Items Endpoints')
     @ApiBearerAuth('JWT-auth')

@@ -195,14 +195,7 @@ async delete(deleteServiceDto:DeleteRequestDto){
         })
     }
     catch (error) {
-        return ({
-            status: StatusCodes.INTERNAL_SERVER_ERROR,
-            send: ReasonPhrases.INTERNAL_SERVER_ERROR,
-            data: {
-                error: error.toString(),
-                message: error.message,
-            }
-        })
+        throw new InternalServerErrorException()
     }
 }
 
