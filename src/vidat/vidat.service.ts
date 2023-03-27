@@ -8,6 +8,7 @@ import { RetriveAccountDto } from './dto/retrieve-account.dto';
 
 import { Delivery } from 'src/deliveries/models/delivery.model';
 import { Item } from 'src/items/models/item.model';
+import { Request } from 'src/requests/models/request.model';
 import { Provider } from 'src/providers/models/provider.model';
 import { Client } from 'src/clients/models/client.model';
 
@@ -24,6 +25,8 @@ export class VidatService {
         private readonly itemModel: typeof Item,
         @InjectModel(Provider)
         private readonly providerModel: typeof Provider,
+        @InjectModel(Request)
+        private readonly requestModel: typeof Request,
         @InjectModel(Client)
         private readonly clientModel: typeof Client,
     ) {}
@@ -172,14 +175,26 @@ export class VidatService {
 
     async requestProvider(id:number) {
         try {
-            const items = await this.itemModel.findAll({
-                where: {providerId: id},
-                include: ["deliveries"],
+
+            const provider = await this.providerModel.findAll({
+                where: {id: id},
+                include: [{
+                    model: this.itemModel,
+                    include: [{
+                        model: this.deliveryModel,
+                        include: [{
+                            model: this.requestModel,
+                        }]
+                    }]
+                }]
             })
+
+            console.log(provider)
+
             return ({
                 status: StatusCodes.OK,
                 send: ReasonPhrases.OK,
-                data: items,
+                data: provider,
             })
         }
         catch (error) {
