@@ -201,4 +201,171 @@ export class VidatService {
             throw new InternalServerErrorException()
         }
     }
+
+    async getCalendar(headers: Headers){
+        try {
+            const jwt = headers['authorization'].split(" ")[1];
+            const jwtKey = this.configService.get<string>('jwt.key');
+            const secret = new TextEncoder().encode(jwtKey);
+            const { payload } = await jose.jwtVerify(jwt, secret);
+
+            if ( payload.type === "provider" ){
+                const itemsLoad = await this.itemModel.findAll({
+                    where: {providerId: payload.id},
+                    include: [{
+                        model: this.deliveryModel,
+                        attributes: ["id", "itemId", "requestId", "state", "properties"],
+                        include: [{
+                            model: this.requestModel,
+                            attributes: ["id", "place", "date", "paymentMethod", "amount", "properties", "clientId"],
+                            include: [{
+                                model: this.clientModel,
+                                attributes: ["id", "name", "tin", "email", "phone", "address", "properties"]
+                            }]
+                        }]
+                    }]
+                })
+                const items = itemsLoad.map(item => {
+                    return({
+                        id: item.id,
+                        title: item.title,
+                        description: item.description,
+                        currency: item.currency,
+                        unitCost: item.unitCost,
+                        properties: item.properties,
+                        deliveries: item.deliveries
+                    })
+                })
+                const dataFilter = items.filter((service) => service.deliveries.length != 0)
+                const ScheduleList = dataFilter.reduce((all, service) => [...all,...service.deliveries] ,[])
+                const schedules = ScheduleList.map((schedule) => {
+                    if (schedule.request != null){
+                        const appointment =schedule.request;
+                        return{
+                            amount: appointment.amount,
+                            date: appointment.date,
+                            dayle: schedule.properties,
+                            description: appointment.properties.description,
+                            id: schedule.id,
+                            payment: appointment.paymentMethod,
+                            place: appointment.place,
+                            state: schedule.state,
+                            client: appointment.client
+                        }
+                    }
+                    else {
+                        return {
+                            amount: -1,
+                            client: {
+                                id: -1,
+                                name: "",
+                                tin: "",
+                                nationality: "",
+                                birthday: new Date(),
+                                email: "",
+                                phone: -1,
+                                address: "",
+                                password: "",
+                                properties: {
+                                    profession: "",
+                                    position: "",
+                                    photo: "",
+                                },
+                                type: "",
+                            },
+                            clientId: -1,
+                            date: "",
+                            id: -1,
+                            paymentMethod: "",
+                            place: "",
+                            properties: {
+                                description: ""
+                            },
+                        }
+                    }
+
+                })
+                return ({
+                    status: StatusCodes.OK,
+                    send: ReasonPhrases.OK,
+                    data: schedules
+                })
+
+            }
+            else if ( payload.type === "client" ){
+                const requestsLoad = await this.requestModel.findAll({
+                    where: {clientId: payload.id},
+                    include: [{
+                        model: this.deliveryModel,
+                        attributes: ["id", "itemId", "requestId", "state", "properties"],
+                        include: [{
+                            model: this.itemModel,
+                            attributes: ["id", "title", "description", "currency", "unitCost", "properties", "providerId"],
+                            include: [{
+                                model: this.providerModel,
+                                attributes: ["id", "name", "tin", "email", "phone", "address", "properties"]
+                            }]
+                        }]
+                    }]
+                })
+                const requests = await requestsLoad.map(request => {
+                    return({
+                        id: request.id,
+                        place: request.place,
+                        date: request.date,
+                        paymentMethod: request.paymentMethod,
+                        amount: request.amount,
+                        properties: request.properties,
+                        deliveries: request.deliveries
+                    })
+                })
+                const schedules = requests.map((contract) => {
+                    if(contract.deliveries.length != 0){
+                        return{
+                            contractId: contract.id,
+                            amount: contract.amount,
+                            date: contract.date,
+                            daily: contract.deliveries[0].properties,
+                            properties: contract.properties,
+                            id: contract.deliveries[0].id,
+                            payment: contract.paymentMethod,
+                            place: contract.place,
+                            state: contract.deliveries[0].state
+                        }
+                    }
+                    else{
+                        return{
+                            contractId: contract.id,
+                            amount: -1,
+                            date: "",
+                            daily: {
+                                start: "",
+                                end: "",
+                            },
+                            properties: "",
+                            id: -1,
+                            payment: "",
+                            place: "",
+                            state: "REJECT"
+                        }
+                    }
+                })
+                return ({
+                    status: StatusCodes.OK,
+                    send: ReasonPhrases.OK,
+                    data: schedules
+                })
+            }
+        }
+        catch (error) {
+            return ({
+                status: StatusCodes.INTERNAL_SERVER_ERROR,
+                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
+                data: {
+                    error: error.toString(),
+                    message: error.message,
+                }
+            })
+        }
+    }
 }

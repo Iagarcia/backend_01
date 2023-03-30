@@ -12,7 +12,7 @@ export class Delivery extends Model {
     @Column({type: 'jsonb'})
     properties: string;
 
-    @AllowNull(true)
+    @AllowNull(false)
     @ForeignKey(() => Item)
     @Column
     itemId: number

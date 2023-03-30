@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards, Body, UseFilters, Put, Get, Param } from '@nestjs/common';
+import { Controller, Post, UseGuards, Body, UseFilters, Put, Get, Param, Headers } from '@nestjs/common';
 import { VidatService } from './vidat.service';
 
 import { FilterItemDto } from './dto/filter-item.dto';
@@ -58,6 +58,13 @@ export class VidatController {
     @UseGuards(ClientGuard)
     requestProvider(@Param('id') id: number){
         return this.vidatService.requestProvider(id);
+    }
+
+    @Get('/getCalendar')
+    @ApiTags('Vidat Endpoints')
+    @ApiBearerAuth('JWT-auth')
+    getCalendar(@Headers() headers: Headers) {
+        return this.vidatService.getCalendar(headers)
     }
 
 }
