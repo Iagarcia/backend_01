@@ -202,7 +202,7 @@ export class VidatService {
         }
     }
 
-    async getCalendar(headers: Headers){
+    async getCalendar(headers: Headers, date: string){
         try {
             const jwt = headers['authorization'].split(" ")[1];
             const jwtKey = this.configService.get<string>('jwt.key');
@@ -237,7 +237,7 @@ export class VidatService {
                 })
                 const dataFilter = items.filter((service) => service.deliveries.length != 0)
                 const ScheduleList = dataFilter.reduce((all, service) => [...all,...service.deliveries] ,[])
-                const schedules = ScheduleList.map((schedule) => {
+                let schedules = ScheduleList.map((schedule) => {
                     if (schedule.request != null){
                         const appointment =schedule.request;
                         return{
@@ -282,8 +282,8 @@ export class VidatService {
                             },
                         }
                     }
-
                 })
+                schedules = schedules.filter((block) => block.date.slice(0,10) == date)
                 return ({
                     status: StatusCodes.OK,
                     send: ReasonPhrases.OK,
@@ -318,7 +318,7 @@ export class VidatService {
                         deliveries: request.deliveries
                     })
                 })
-                const schedules = requests.map((contract) => {
+                let schedules = requests.map((contract) => {
                     if(contract.deliveries.length != 0){
                         return{
                             contractId: contract.id,
@@ -349,6 +349,7 @@ export class VidatService {
                         }
                     }
                 })
+                schedules = schedules.filter((block) => block.date.toString().slice(0,10) == date)
                 return ({
                     status: StatusCodes.OK,
                     send: ReasonPhrases.OK,

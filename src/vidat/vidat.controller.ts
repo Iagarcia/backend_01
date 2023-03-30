@@ -60,11 +60,11 @@ export class VidatController {
         return this.vidatService.requestProvider(id);
     }
 
-    @Get('/getCalendar')
+    @Get('/getCalendar/:date')
     @ApiTags('Vidat Endpoints')
     @ApiBearerAuth('JWT-auth')
-    getCalendar(@Headers() headers: Headers) {
-        return this.vidatService.getCalendar(headers)
+    getCalendar(@Headers() headers: Headers, @Param('date') date: string) {
+        return this.vidatService.getCalendar(headers, date)
     }
 
     @Get('/getWall')
