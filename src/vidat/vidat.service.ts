@@ -283,7 +283,7 @@ export class VidatService {
                         }
                     }
                 })
-                schedules = schedules.filter((block) => block.date.slice(0,10) == date)
+                schedules = schedules.filter((block) => block.date.toString().slice(0,10) == date)
                 return ({
                     status: StatusCodes.OK,
                     send: ReasonPhrases.OK,
