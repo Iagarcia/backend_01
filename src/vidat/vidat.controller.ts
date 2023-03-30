@@ -67,4 +67,11 @@ export class VidatController {
         return this.vidatService.getCalendar(headers)
     }
 
+    @Get('/getWall')
+    @ApiTags('Vidat Endpoints')
+    @ApiBearerAuth('JWT-auth')
+    getWall(@Headers() headers: Headers) {
+        return this.vidatService.getWall(headers)
+    }
+
 }
