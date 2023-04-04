@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, BadRequestException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ConfigService } from '@nestjs/config';
 
@@ -627,6 +627,44 @@ export class VidatService {
                     data: schedules
                 })
             }
+        }
+        catch (error) {
+            return ({
+                status: StatusCodes.INTERNAL_SERVER_ERROR,
+                send: ReasonPhrases.INTERNAL_SERVER_ERROR,
+                data: {
+                    error: error.toString(),
+                    message: error.message,
+                }
+            })
+        }
+    }
+
+    async getAppointment(itemID: number, date: string){
+        try {
+            const item = await this.itemModel.findOne({
+                where: {id: itemID},
+                include: ["provider"],
+            })
+            if (item) {
+                const jsonItem = JSON.parse(JSON.stringify(item));
+                delete jsonItem.provider.password;
+                const provider = jsonItem.provider;
+                delete jsonItem.provider;
+                console.log("ITEM", jsonItem);
+                console.log("PROVIDER", provider);
+                console.log("DATE", date);
+                return ({
+                    status: StatusCodes.OK,
+                    send: ReasonPhrases.OK,
+                    data: {
+                        service: jsonItem,
+                        provider: provider,
+                        date: date,
+                    }
+                })
+            }
+            throw new NotFoundException()
         }
         catch (error) {
             return ({
