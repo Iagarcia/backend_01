@@ -653,10 +653,7 @@ export class VidatService {
             if (item) {
                 const jsonItem = JSON.parse(JSON.stringify(item));
                 delete jsonItem.provider.password;
-                const provider = jsonItem.provider;
-                delete jsonItem.provider;
                 console.log("ITEM", jsonItem);
-                console.log("PROVIDER", provider);
                 console.log("DATE", date);
 
                 const requestsLoad = await this.requestModel.findAll({
@@ -737,7 +734,20 @@ export class VidatService {
                     console.log("ASMBL DATE:", asmbl_date);
                     return(asmbl_date == date);
                 })
+                
 
+                const provider = await this.providerModel.findAll({
+                    where: {id: jsonItem.provider.id},
+                    include: [{
+                        model: this.itemModel,
+                        include: [{
+                            model: this.deliveryModel,
+                            include: [{
+                                model: this.requestModel,
+                            }]
+                        }]
+                    }]
+                })
 
 
                 return ({
@@ -745,7 +755,7 @@ export class VidatService {
                     send: ReasonPhrases.OK,
                     data: {
                         client: schedules,
-                        provider: [],
+                        provider: provider,
                         items: [],
                     }
                 })
