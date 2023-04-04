@@ -734,8 +734,6 @@ export class VidatService {
                     console.log("ASMBL DATE:", asmbl_date);
                     return(asmbl_date == date);
                 })
-                
-
                 const provider = await this.providerModel.findAll({
                     where: {id: jsonItem.provider.id},
                     include: [{
@@ -748,7 +746,6 @@ export class VidatService {
                         }]
                     }]
                 })
-
                 const items = provider[0].items.map(item => {
                     return({
                         id: item.id,
@@ -762,7 +759,7 @@ export class VidatService {
                 })
                 const dataFilter = items.filter((service) => service.deliveries.length != 0)
                 const ScheduleList = dataFilter.reduce((all, service) => [...all,...service.deliveries] ,[])
-                let schedules = ScheduleList.map((schedule) => {
+                let schedules_provider = ScheduleList.map((schedule) => {
                     if (schedule.request != null){
                         const appointment =schedule.request;
                         return{
@@ -808,7 +805,7 @@ export class VidatService {
                         }
                     }
                 })
-                schedules = schedules.filter((block) => {
+                schedules_provider = schedules_provider.filter((block) => {
                     console.log("GIVEN DATE:", date);
                     console.log("BLOCK DATE:", block.date);
                     console.log("BLOCK DATE:", block.date.toString());
@@ -821,14 +818,12 @@ export class VidatService {
                     return(asmbl_date == date);
                 })
 
-
                 return ({
                     status: StatusCodes.OK,
                     send: ReasonPhrases.OK,
                     data: {
                         client: schedules_client,
-                        provider: provider,
-                        items: schedules,
+                        provider: schedules_provider,
                     }
                 })
             }
