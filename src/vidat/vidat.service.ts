@@ -682,7 +682,7 @@ export class VidatService {
                         deliveries: request.deliveries
                     })
                 })
-                let schedules = requests.map((contract) => {
+                let schedules_client = requests.map((contract) => {
                     if(contract.deliveries.length != 0){
                         return{
                             contractId: contract.id,
@@ -713,7 +713,7 @@ export class VidatService {
                         }
                     }
                 })
-                schedules = schedules.filter((block) => {
+                schedules_client = schedules_client.filter((block) => {
                     console.log("GIVEN DATE:", date);
                     console.log("BLOCK DATE:", block.date);
                     console.log("BLOCK DATE:", block.date.toString());
@@ -749,14 +749,86 @@ export class VidatService {
                     }]
                 })
 
+                const items = provider[0].items.map(item => {
+                    return({
+                        id: item.id,
+                        title: item.title,
+                        description: item.description,
+                        currency: item.currency,
+                        unitCost: item.unitCost,
+                        properties: item.properties,
+                        deliveries: item.deliveries
+                    })
+                })
+                const dataFilter = items.filter((service) => service.deliveries.length != 0)
+                const ScheduleList = dataFilter.reduce((all, service) => [...all,...service.deliveries] ,[])
+                let schedules = ScheduleList.map((schedule) => {
+                    if (schedule.request != null){
+                        const appointment =schedule.request;
+                        return{
+                            amount: appointment.amount,
+                            date: appointment.date,
+                            daily: schedule.properties,
+                            description: appointment.properties.description,
+                            id: schedule.id,
+                            payment: appointment.paymentMethod,
+                            place: appointment.place,
+                            state: schedule.state,
+                            client: appointment.client
+                        }
+                    }
+                    else {
+                        return {
+                            amount: -1,
+                            client: {
+                                id: -1,
+                                name: "",
+                                tin: "",
+                                nationality: "",
+                                birthday: new Date(),
+                                email: "",
+                                phone: -1,
+                                address: "",
+                                password: "",
+                                properties: {
+                                    profession: "",
+                                    position: "",
+                                    photo: "",
+                                },
+                                type: "",
+                            },
+                            clientId: -1,
+                            date: "",
+                            id: -1,
+                            paymentMethod: "",
+                            place: "",
+                            properties: {
+                                description: ""
+                            },
+                        }
+                    }
+                })
+                schedules = schedules.filter((block) => {
+                    console.log("GIVEN DATE:", date);
+                    console.log("BLOCK DATE:", block.date);
+                    console.log("BLOCK DATE:", block.date.toString());
+                    let year = block.date.getFullYear();
+                    let month = block.date.getMonth()+1;
+                    month = month < 10? '0'+month: month
+                    let day = block.date.getDate();
+                    const asmbl_date = year+'-'+month+'-'+day;
+                    console.log("ASMBL DATE:", year+'-'+month+'-'+day);
+                    return(asmbl_date == date);
+                })
+
 
                 return ({
                     status: StatusCodes.OK,
                     send: ReasonPhrases.OK,
                     data: {
-                        client: schedules,
+                        client: schedules_client,
                         provider: provider,
-                        items: [],
+                        items: schedules,
                     }
                 })
             }
