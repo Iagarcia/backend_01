@@ -78,8 +78,8 @@ export class VidatController {
     @ApiTags('Vidat Endpoints')
     @ApiBearerAuth('JWT-auth')
     @UseGuards(ClientGuard)
-    getAppointment(@Param('itemID') itemID: number, @Param('date') date: string) {
-        return this.vidatService.getAppointment(itemID, date)
+    getAppointment(@Headers() headers: Headers, @Param('itemID') itemID: number, @Param('date') date: string) {
+        return this.vidatService.getAppointment(headers, itemID, date)
     }
 
 }

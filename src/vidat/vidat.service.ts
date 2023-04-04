@@ -640,8 +640,12 @@ export class VidatService {
         }
     }
 
-    async getAppointment(itemID: number, date: string){
+    async getAppointment(headers, itemID: number, date: string){
         try {
+            const jwt = headers['authorization'].split(" ")[1];
+            const jwtKey = this.configService.get<string>('jwt.key');
+            const secret = new TextEncoder().encode(jwtKey);
+            const { payload } = await jose.jwtVerify(jwt, secret);
             const item = await this.itemModel.findOne({
                 where: {id: itemID},
                 include: ["provider"],
@@ -654,13 +658,95 @@ export class VidatService {
                 console.log("ITEM", jsonItem);
                 console.log("PROVIDER", provider);
                 console.log("DATE", date);
+
+                const requestsLoad = await this.requestModel.findAll({
+                    where: {clientId: payload.id},
+                    include: [{
+                        model: this.deliveryModel,
+                        attributes: ["id", "itemId", "requestId", "state", "properties"],
+                        include: [{
+                            model: this.itemModel,
+                            attributes: ["id", "title", "description", "currency", "unitCost", "properties", "providerId"],
+                            include: [{
+                                model: this.providerModel,
+                                attributes: ["id", "name", "tin", "email", "phone", "address", "properties"]
+                            }]
+                        }]
+                    }]
+                })
+                const requests = await requestsLoad.map(request => {
+                    return({
+                        id: request.id,
+                        place: request.place,
+                        date: request.date,
+                        paymentMethod: request.paymentMethod,
+                        amount: request.amount,
+                        properties: request.properties,
+                        deliveries: request.deliveries
+                    })
+                })
+                let schedules = requests.map((contract) => {
+                    if(contract.deliveries.length != 0){
+                        return{
+                            contractId: contract.id,
+                            amount: contract.amount,
+                            date: contract.date,
+                            daily: contract.deliveries[0].properties,
+                            properties: contract.properties,
+                            id: contract.deliveries[0].id,
+                            payment: contract.paymentMethod,
+                            place: contract.place,
+                            state: contract.deliveries[0].state
+                        }
+                    }
+                    else{
+                        return{
+                            contractId: contract.id,
+                            amount: -1,
+                            date: "",
+                            daily: {
+                                start: "",
+                                end: "",
+                            },
+                            properties: "",
+                            id: -1,
+                            payment: "",
+                            place: "",
+                            state: "REJECT"
+                        }
+                    }
+                })
+                schedules = schedules.filter((block) => {
+                    console.log("GIVEN DATE:", date);
+                    console.log("BLOCK DATE:", block.date);
+                    console.log("BLOCK DATE:", block.date.toString());
+                    let date_ = new Date(block.date);
+                    let year = date_.getFullYear();
+                    console.log("YEAR:", year)
+                    let month;
+                    if (date_.getMonth()+1 < 10){
+                        month = '0' + (date_.getMonth()+1).toString()
+                    }
+                    else {
+                        month = (date_.getMonth()+1).toString()
+                    }	
+                    console.log("MONTH:", month)
+                    let day = date_.getDate();
+                    console.log("DAY:", day)
+                    const asmbl_date = year+'-'+month+'-'+day;
+                    console.log("ASMBL DATE:", asmbl_date);
+                    return(asmbl_date == date);
+                })
+
+
+
                 return ({
                     status: StatusCodes.OK,
                     send: ReasonPhrases.OK,
                     data: {
-                        service: jsonItem,
-                        provider: provider,
-                        date: date,
+                        client: schedules,
+                        provider: [],
+                        items: [],
                     }
                 })
             }
