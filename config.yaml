@@ -4,10 +4,10 @@ http:
 db:
     host: 'localhost'
     port: 5432
-    username: 'vidat_user'
-    password: 'vidat_pwd'
-    database: 'vidat_db'
-
+    username: 'backend_01_user'
+    password: 'backend_01_pwd'
+    database: 'backend_01_db'
+    
 doc:
     path: '/api'
     password: 'backend_01'
