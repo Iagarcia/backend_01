@@ -243,7 +243,7 @@ export class VidatService {
                         return{
                             amount: appointment.amount,
                             date: appointment.date,
-                            dayle: schedule.properties,
+                            daily: schedule.properties,
                             description: appointment.properties.description,
                             id: schedule.id,
                             payment: appointment.paymentMethod,
@@ -283,7 +283,18 @@ export class VidatService {
                         }
                     }
                 })
-                schedules = schedules.filter((block) => block.date.toString().slice(0,10) == date)
+                schedules = schedules.filter((block) => {
+			console.log("GIVEN DATE:", date);
+			console.log("BLOCK DATE:", block.date);
+			console.log("BLOCK DATE:", block.date.toString());
+			let year = block.date.getFullYear();
+			let month = block.date.getMonth()+1;
+			month = month < 10? '0'+month: month
+			let day = block.date.getDate();
+			const asmbl_date = year+'-'+month+'-'+day;
+			console.log("ASMBL DATE:", year+'-'+month+'-'+day);
+			return(asmbl_date == date);
+		})
                 return ({
                     status: StatusCodes.OK,
                     send: ReasonPhrases.OK,
@@ -349,7 +360,27 @@ export class VidatService {
                         }
                     }
                 })
-                schedules = schedules.filter((block) => block.date.toString().slice(0,10) == date)
+                schedules = schedules.filter((block) => {
+			console.log("GIVEN DATE:", date);
+			console.log("BLOCK DATE:", block.date);
+			console.log("BLOCK DATE:", block.date.toString());
+			let date_ = new Date(block.date);
+			let year = date_.getFullYear();
+			console.log("YEAR:", year)
+			let month;
+			if (date_.getMonth()+1 < 10){
+				month = '0' + (date_.getMonth()+1).toString()
+			}
+			else {
+				month = (date_.getMonth()+1).toString()
+			}	
+			console.log("MONTH:", month)
+			let day = date_.getDate();
+			console.log("DAY:", day)
+			const asmbl_date = year+'-'+month+'-'+day;
+			console.log("ASMBL DATE:", asmbl_date);
+			return(asmbl_date == date);
+		})
                 return ({
                     status: StatusCodes.OK,
                     send: ReasonPhrases.OK,
@@ -410,7 +441,7 @@ export class VidatService {
                         return{
                             amount: appointment.amount,
                             date: appointment.date,
-                            dayle: schedule.properties,
+                            daily: schedule.properties,
                             description: appointment.properties.description,
                             id: schedule.id,
                             payment: appointment.paymentMethod,

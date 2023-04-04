@@ -4,15 +4,15 @@ http:
 db:
     host: 'localhost'
     port: 5432
-    username: 'backend_01_user'
-    password: 'backend_01_pwd'
-    database: 'backend_01_db'
+    username: 'vidat_user'
+    password: 'vidat_pwd'
+    database: 'vidat_db'
 
 doc:
     path: '/api'
     password: 'backend_01'
     title: 'backend_01 API'
-    description: 'Official backend_01: Goods and Services API Documentation'
+    description: 'Official VIDAT API Documentation'
     version: '1.0'
     bearer:
         type: 'http'
@@ -30,7 +30,7 @@ jwt:
 
 files:
     images:
-        providers: '/home/iagarcia/backend_01/uploads/'
-        items: '/home/iagarcia/backend_01/uploads/'
-        requests: '/home/iagarcia/backend_01/uploads/'
-        clients: '/home/iagarcia/backend_01/uploads/'
+        providers: '/home/ec2-user/backend_01/uploads/'
+        items: '/home/ec2-user/backend_01/uploads/'
+        requests: '/home/ec2-user/backend_01/uploads/'
+        clients: '/home/ec2-user/backend_01/uploads/'
