@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Vidat API!';
+  getHello() {
+    return ({
+      message: 'Backend 01: Delivering Goods and Services API!',
+      status: true,
+    })
   }
 }

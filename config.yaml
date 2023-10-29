@@ -2,17 +2,17 @@ http:
     port: 3000
     
 db:
-    host: 'localhost'
+    host: '172.21.0.2'
     port: 5432
     username: 'backend_01_user'
-    password: 'backend_01_pwd'
+    password: 'backend_01_password'
     database: 'backend_01_db'
     
 doc:
-    path: '/api'
+    path: '/docs'
     password: 'backend_01'
     title: 'backend_01 API'
-    description: 'Official VIDAT API Documentation'
+    description: 'API Documentation | backend_01: Delivering Goods and Services ![alt text](/documentation/database.svg)'
     version: '1.0'
     bearer:
         type: 'http'
